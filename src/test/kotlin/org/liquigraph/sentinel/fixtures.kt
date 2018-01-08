@@ -1,5 +1,6 @@
 package org.liquigraph.sentinel
 
+import org.liquigraph.sentinel.model.MavenCentralArtifact
 import java.nio.charset.StandardCharsets
 import java.util.*
 
@@ -45,4 +46,106 @@ object Fixtures {
         }
     }
     """.trimIndent()
+
+    val mavenCentralApiResponse = """
+        {
+   "responseHeader":{
+      "status":0,
+      "QTime":9,
+      "params":{
+         "q":"g:\"org.neo4j\" AND a:\"neo4j\"",
+         "core":"gav",
+         "indent":"off",
+         "fl":"id,g,a,v,p,ec,timestamp,tags",
+         "sort":"score desc,timestamp desc,g asc,a asc,v desc",
+         "rows":"20",
+         "wt":"json",
+         "version":"2.2"
+      }
+   },
+   "response":{
+      "numFound":207,
+      "start":0,
+      "docs":[
+         {
+            "id":"org.neo4j:neo4j:3.4.0-alpha04",
+            "g":"org.neo4j",
+            "a":"neo4j",
+            "v":"3.4.0-alpha04",
+            "p":"jar",
+            "timestamp":1514895313000,
+            "ec":[
+               ".pom"
+            ],
+            "tags":[
+               "libraries",
+               "dependency",
+               "maven",
+               "package",
+               "containing",
+               "most",
+               "neo4j",
+               "used",
+               "intended",
+               "meta"
+            ]
+         },
+         {
+            "id":"org.neo4j:neo4j:3.2.9",
+            "g":"org.neo4j",
+            "a":"neo4j",
+            "v":"3.2.9",
+            "p":"jar",
+            "timestamp":1514888927000,
+            "ec":[
+               "-sources.jar",
+               ".jar"
+            ],
+            "tags":[
+               "libraries",
+               "dependency",
+               "maven",
+               "package",
+               "containing",
+               "most",
+               "neo4j",
+               "used",
+               "intended",
+               "meta"
+            ]
+         },
+         {
+            "id":"org.neo4j:neo4j:2.3.12",
+            "g":"org.neo4j",
+            "a":"neo4j",
+            "v":"2.3.12",
+            "p":"jar",
+            "timestamp":1513085191000,
+            "ec":[
+               ".jar",
+               ".pom"
+            ],
+            "tags":[
+               "libraries",
+               "dependency",
+               "maven",
+               "package",
+               "containing",
+               "most",
+               "neo4j",
+               "used",
+               "intended",
+               "meta"
+            ]
+         }
+      ]
+   }
+}
+        """.trimIndent()
+
+    val mavenCentralArtifacts = listOf(
+            MavenCentralArtifact("org.neo4j", "neo4j", "3.4.0-alpha04", "jar", listOf(".pom")),
+            MavenCentralArtifact("org.neo4j", "neo4j", "3.2.9", "jar", listOf("-sources.jar", ".jar")),
+            MavenCentralArtifact("org.neo4j", "neo4j", "2.3.12", "jar", listOf(".jar", ".pom"))
+    )
 }

@@ -8,7 +8,9 @@ import org.junit.Before
 import org.junit.Test
 import org.liquigraph.sentinel.github.LiquigraphService
 import org.liquigraph.sentinel.github.Neo4jVersion
+import org.liquigraph.sentinel.mavencentral.MavenCentralService
 import org.liquigraph.sentinel.model.Failure
+import org.liquigraph.sentinel.model.MavenCentralArtifact
 import org.liquigraph.sentinel.model.Success
 import java.io.PrintStream
 import java.nio.file.Files
@@ -21,7 +23,8 @@ class SentinelRunnerTest {
     lateinit var err: CapturedOutputStream
 
     val liquigraphService = mock<LiquigraphService>()
-    val runner = SentinelRunner(liquigraphService)
+    val mavenCentralService = mock<MavenCentralService>()
+    val runner = SentinelRunner(liquigraphService, mavenCentralService)
 
     @Before
     fun prepare() {
@@ -40,13 +43,18 @@ class SentinelRunnerTest {
     }
 
     @Test
-    fun `runs Liquigraph service`() {
-        val versions = listOf(Neo4jVersion("3.2.1", inDockerStore = true))
-        whenever(liquigraphService.getNeo4jVersions()).thenReturn(Success(versions))
+    fun `runs runs ruuuuuns`() {
+        val travisVersions = listOf(Neo4jVersion("3.2.1", inDockerStore = true))
+        val mavenArtifacts = listOf(MavenCentralArtifact("org.neo4j", "neo4j", "3.2.9", "jar", listOf(".jar")))
+        whenever(liquigraphService.getNeo4jVersions()).thenReturn(
+                Success(travisVersions))
+        whenever(mavenCentralService.getNeo4jArtifacts()).thenReturn(
+                Success(mavenArtifacts))
 
         runner.run()
 
-        assertThat(out.buffer).contains(versions.toString())
+        assertThat(out.buffer).contains(travisVersions.toString())
+        assertThat(out.buffer).contains(mavenArtifacts.toString())
         assertThat(err.buffer).isEmpty()
     }
 
@@ -60,6 +68,22 @@ class SentinelRunnerTest {
         assertThat(err.buffer).contains(error.toString())
         assertThat(out.buffer).isEmpty()
     }
+
+    @Test
+    fun `reports Maven Central service error`() {
+        val travisVersions = listOf(Neo4jVersion("3.2.1", inDockerStore = true))
+        val error = Failure<List<MavenCentralArtifact>>(42, "I hear you had an error...?")
+        whenever(liquigraphService.getNeo4jVersions()).thenReturn(
+                Success(travisVersions))
+        whenever(mavenCentralService.getNeo4jArtifacts()).thenReturn(error)
+
+        runner.run()
+
+        assertThat(err.buffer).contains(error.toString())
+        assertThat(out.buffer).contains(travisVersions.toString())
+    }
+
+
 }
 
 class CapturedOutputStream : PrintStream(Files.createTempFile("sentinel", "test").toFile()) {
