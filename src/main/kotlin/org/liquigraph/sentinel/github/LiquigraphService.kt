@@ -14,8 +14,8 @@ class LiquigraphService(val travisYamlClient: TravisYamlClient,
         val result = travisYamlClient.fetchTravisYaml()
 
         return when (result) {
-            is Failure<String> -> Failure(result.code, result.message)
-            is Success<String> -> neo4jVersionParser.parse((result).getContent())
+            is Failure -> Failure(result.code, result.message)
+            is Success -> neo4jVersionParser.parse(result.content)
         }
     }
 }

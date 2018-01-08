@@ -2,6 +2,7 @@ package org.liquigraph.sentinel.github
 
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
+import org.liquigraph.sentinel.getContentOrThrow
 import org.yaml.snakeyaml.Yaml
 import org.liquigraph.sentinel.model.Failure
 import org.liquigraph.sentinel.model.Success
@@ -20,7 +21,7 @@ class Neo4jVersionParserTest {
             |      WITH_DOCKER=false
         """.trimMargin()) as Success<List<Neo4jVersion>>
 
-        assertThat(versions.getContent())
+        assertThat(versions.getContentOrThrow())
                 .containsOnlyOnce(
                         Neo4jVersion("1.2.3", inDockerStore = true),
                         Neo4jVersion("2.2.2", inDockerStore = false))
@@ -35,7 +36,7 @@ class Neo4jVersionParserTest {
             |    - NEO_VERSION=1.2.3
         """.trimMargin()) as Success<List<Neo4jVersion>>
 
-        assertThat(versions.getContent()).containsOnlyOnce(Neo4jVersion("1.2.3", inDockerStore = false))
+        assertThat(versions.getContentOrThrow()).containsOnlyOnce(Neo4jVersion("1.2.3", inDockerStore = false))
 
     }
 

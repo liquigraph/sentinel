@@ -6,6 +6,7 @@ import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.assertj.core.api.Assertions
 import org.junit.Test
+import org.liquigraph.sentinel.getContentOrThrow
 import org.liquigraph.sentinel.model.Success
 import org.yaml.snakeyaml.Yaml
 import java.nio.charset.StandardCharsets
@@ -67,7 +68,7 @@ class LiquigraphServiceIntegrationTest {
 
         val result = subject.getNeo4jVersions() as Success
 
-        Assertions.assertThat(result.getContent()).containsExactly(
+        Assertions.assertThat(result.getContentOrThrow()).containsExactly(
                 Neo4jVersion("3.0.11", true),
                 Neo4jVersion("3.1.7", false)
         )
