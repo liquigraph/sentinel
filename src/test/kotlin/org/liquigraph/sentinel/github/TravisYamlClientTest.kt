@@ -9,7 +9,7 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.liquigraph.sentinel.Fixtures
-import org.liquigraph.sentinel.model.Error
+import org.liquigraph.sentinel.model.Failure
 import org.liquigraph.sentinel.model.Success
 
 class TravisYamlClientTest {
@@ -48,7 +48,7 @@ class TravisYamlClientTest {
 
         val error = client.fetchTravisYaml()
 
-        assertThat(error).isEqualTo(Error<String>(404, "Not Found"))
+        assertThat(error).isEqualTo(Failure<String>(404, "Not Found"))
     }
 
     @Test
@@ -57,7 +57,7 @@ class TravisYamlClientTest {
 
         val error = client.fetchTravisYaml()
 
-        assertThat(error).isEqualTo(Error<String>(500, "Unreachable http://localhost:${mockWebServer.port}"))
+        assertThat(error).isEqualTo(Failure<String>(500, "Unreachable http://localhost:${mockWebServer.port}"))
     }
 
     @Test
@@ -66,7 +66,7 @@ class TravisYamlClientTest {
 
         val error = client.fetchTravisYaml()
 
-        assertThat(error).isEqualTo(Error<String>(666, "Unexpected error"))
+        assertThat(error).isEqualTo(Failure<String>(666, "Unexpected error"))
     }
 }
 

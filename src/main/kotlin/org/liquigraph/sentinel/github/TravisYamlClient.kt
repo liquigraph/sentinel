@@ -6,7 +6,7 @@ import okhttp3.Request
 import okhttp3.ResponseBody
 import org.liquigraph.sentinel.model.Result
 import org.liquigraph.sentinel.model.Success
-import org.liquigraph.sentinel.model.Error
+import org.liquigraph.sentinel.model.Failure
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import java.nio.charset.StandardCharsets
@@ -25,10 +25,10 @@ class TravisYamlClient(val gson: Gson,
 
         return if (!response.isSuccessful) {
             when (response.code()) {
-                in 400..499 -> Error(response.code(), bodyAsMap(response.body()!!)["message"]!!)
-                in 500..599 -> Error(response.code(), "Unreachable $baseUri")
+                in 400..499 -> Failure(response.code(), bodyAsMap(response.body()!!)["message"]!!)
+                in 500..599 -> Failure(response.code(), "Unreachable $baseUri")
                 else -> {
-                    Error(response.code(), "Unexpected error")
+                    Failure(response.code(), "Unexpected error")
                 }
             }
         }

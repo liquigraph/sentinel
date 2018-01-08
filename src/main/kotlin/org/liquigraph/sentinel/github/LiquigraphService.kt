@@ -2,7 +2,7 @@ package org.liquigraph.sentinel.github
 
 import org.liquigraph.sentinel.model.Result
 import org.liquigraph.sentinel.model.Success
-import org.liquigraph.sentinel.model.Error
+import org.liquigraph.sentinel.model.Failure
 
 class LiquigraphService(val travisYamlClient: TravisYamlClient,
                         val neo4jVersionParser: Neo4jVersionParser) {
@@ -12,8 +12,8 @@ class LiquigraphService(val travisYamlClient: TravisYamlClient,
         val result = travisYamlClient.fetchTravisYaml()
 
         return when (result) {
-            is Error<String> -> Error(result.code, result.message)
-            is Success<String> -> Success(neo4jVersionParser.parse((result).getContent()))
+            is Failure<String> -> Failure(result.code, result.message)
+            is Success<String> -> neo4jVersionParser.parse((result).getContent())
         }
     }
 }
