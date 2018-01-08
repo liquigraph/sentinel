@@ -5,11 +5,11 @@ sealed class Result<out T> {
     abstract fun getContent(): T
 }
 
-data class Error<out T>(val code: Int, val message: String) : Result<T>() {
+data class Failure<out T>(val code: Int, val message: String) : Result<T>() {
     override fun isSuccessful(): Boolean = false
 
     override fun getContent(): T {
-        throw RuntimeException("nope")
+        throw RuntimeException("Cannot access content of an error result")
     }
 }
 
