@@ -1,6 +1,6 @@
 package org.liquigraph.sentinel
 
-import org.liquigraph.sentinel.github.LiquigraphService
+import org.liquigraph.sentinel.github.TravisYamlService
 import org.liquigraph.sentinel.mavencentral.MavenCentralService
 import org.liquigraph.sentinel.model.Failure
 import org.liquigraph.sentinel.model.Success
@@ -8,11 +8,11 @@ import org.springframework.boot.CommandLineRunner
 import org.springframework.stereotype.Component
 
 @Component
-class SentinelRunner(private val liquigraphService: LiquigraphService,
+class SentinelRunner(private val travisYamlService: TravisYamlService,
                      private val mavenCentralServices: MavenCentralService): CommandLineRunner {
 
-    override fun run(vararg p0: String?) {
-        val testedNeo4jVersions = liquigraphService.getNeo4jVersions()
+    override fun run(vararg args: String?) {
+        val testedNeo4jVersions = travisYamlService.getNeo4jVersions()
         when (testedNeo4jVersions) {
             is Success -> {
                 println("Fetched from Github")

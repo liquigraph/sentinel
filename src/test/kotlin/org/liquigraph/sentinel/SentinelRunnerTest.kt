@@ -6,7 +6,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
-import org.liquigraph.sentinel.github.LiquigraphService
+import org.liquigraph.sentinel.github.TravisYamlService
 import org.liquigraph.sentinel.github.Neo4jVersion
 import org.liquigraph.sentinel.mavencentral.MavenCentralService
 import org.liquigraph.sentinel.model.Failure
@@ -22,7 +22,7 @@ class SentinelRunnerTest {
     lateinit var out: CapturedOutputStream
     lateinit var err: CapturedOutputStream
 
-    val liquigraphService = mock<LiquigraphService>()
+    val liquigraphService = mock<TravisYamlService>()
     val mavenCentralService = mock<MavenCentralService>()
     val runner = SentinelRunner(liquigraphService, mavenCentralService)
 
