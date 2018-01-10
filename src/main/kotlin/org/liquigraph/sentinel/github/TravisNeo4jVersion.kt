@@ -30,7 +30,7 @@ data class SemanticVersion(val major: Int,
     }
 
     override fun toString(): String {
-        return "$major.$minor.$patch ${if (preRelease.isEmpty()) "" else "-" + preRelease.joinToString(".")}"
+        return "$major.$minor.$patch${if (preRelease.isEmpty()) "" else "-" + preRelease.joinToString(".")}"
     }
 
     private fun comparePreReleases(other: SemanticVersion): Int {
