@@ -12,7 +12,7 @@ import org.yaml.snakeyaml.Yaml
 import java.nio.charset.StandardCharsets
 import java.util.*
 
-class LiquigraphServiceIntegrationTest {
+class TravisYamlServiceIntegrationTest {
 
     @Test
     fun `retrieves the content of a file`() {
@@ -58,7 +58,7 @@ class LiquigraphServiceIntegrationTest {
             """.trimIndent()))
         mockWebServer.start()
 
-        val subject = LiquigraphService(
+        val subject = TravisYamlService(
                 TravisYamlClient(
                         Gson(),
                         OkHttpClient(),

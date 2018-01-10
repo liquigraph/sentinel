@@ -8,10 +8,10 @@ import org.liquigraph.sentinel.Fixtures
 import org.liquigraph.sentinel.model.Failure
 import org.liquigraph.sentinel.model.Success
 
-class LiquigraphServiceTest {
+class TravisYamlServiceTest {
     val travisYamlClient = mock<TravisYamlClient>()
     val neo4jVersionParser = mock<Neo4jVersionParser>()
-    val liquigraphService = LiquigraphService(travisYamlClient, neo4jVersionParser)
+    val liquigraphService = TravisYamlService(travisYamlClient, neo4jVersionParser)
 
     @Test
     fun `propagates the error`() {
