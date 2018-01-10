@@ -1,4 +1,4 @@
-package org.liquigraph.sentinel.model
+package org.liquigraph.sentinel.effects
 
 sealed class Result<out T>
 data class Failure<out T>(val code: Int, val message: String) : Result<T>()

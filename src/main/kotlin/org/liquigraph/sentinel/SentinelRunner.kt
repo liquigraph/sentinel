@@ -2,8 +2,8 @@ package org.liquigraph.sentinel
 
 import org.liquigraph.sentinel.github.TravisYamlService
 import org.liquigraph.sentinel.mavencentral.MavenCentralService
-import org.liquigraph.sentinel.model.Failure
-import org.liquigraph.sentinel.model.Success
+import org.liquigraph.sentinel.effects.Failure
+import org.liquigraph.sentinel.effects.Success
 import org.springframework.boot.CommandLineRunner
 import org.springframework.stereotype.Component
 

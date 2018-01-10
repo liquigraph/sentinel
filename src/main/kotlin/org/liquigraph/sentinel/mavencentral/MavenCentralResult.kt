@@ -1,16 +1,17 @@
-package org.liquigraph.sentinel.model
+package org.liquigraph.sentinel.mavencentral
 
 import com.google.gson.annotations.SerializedName
+import org.liquigraph.sentinel.github.SemanticVersion
 
 data class MavenCentralResult(var response: MavenCentralResponse?)
-data class MavenCentralResponse(var docs: List<MavenCentralArtifact>?)
-data class MavenCentralArtifact(
+data class MavenCentralResponse(var docs: List<MavenArtifact>?)
+data class MavenArtifact(
         @SerializedName("g")
         var groupId: String,
         @SerializedName("a")
         var artifactId: String,
         @SerializedName("v")
-        var version: String,
+        var version: SemanticVersion,
         @SerializedName("p")
         var packaging: String,
         @SerializedName("ec")
