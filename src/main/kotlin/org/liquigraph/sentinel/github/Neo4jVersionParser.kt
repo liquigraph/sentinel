@@ -42,7 +42,7 @@ class Neo4jVersionParser(val yaml: Yaml) {
     }
 
     private fun extractVersions(matrix: List<String>): Result<List<Neo4jVersion>> {
-        val versions = matrix.mapIndexed { index, row -> parseRow(index, row) }
+        val versions: List<Result<Neo4jVersion>> = matrix.mapIndexed { index, row -> parseRow(index, row) }
         val (failures, successes) = partition(versions)
 
         return if (failures.isNotEmpty()) {
@@ -54,10 +54,10 @@ class Neo4jVersionParser(val yaml: Yaml) {
     }
 
     private fun <T> partition(input: List<Result<T>>) =
-            input.fold(Pair(emptyList<Failure<T>>(), emptyList<Success<T>>())) { pair, element ->
+            input.fold(Pair(emptyList<Failure<T>>(), emptyList<Success<T>>())) { (failures, successes), element ->
                 when (element) {
-                    is Failure -> Pair(pair.first + element, pair.second)
-                    is Success -> Pair(pair.first, pair.second + element)
+                    is Failure -> Pair(failures + element, successes)
+                    is Success -> Pair(failures, successes + element)
                 }
             }
 
