@@ -5,12 +5,12 @@ import com.nhaarman.mockito_kotlin.whenever
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.liquigraph.sentinel.Fixtures
-import org.liquigraph.sentinel.model.Failure
-import org.liquigraph.sentinel.model.Success
+import org.liquigraph.sentinel.effects.Failure
+import org.liquigraph.sentinel.effects.Success
 
 class TravisYamlServiceTest {
     val travisYamlClient = mock<TravisYamlClient>()
-    val neo4jVersionParser = mock<Neo4jVersionParser>()
+    val neo4jVersionParser = mock<TravisNeo4jVersionParser>()
     val liquigraphService = TravisYamlService(travisYamlClient, neo4jVersionParser)
 
     @Test
@@ -26,7 +26,7 @@ class TravisYamlServiceTest {
     @Test
     fun `retrieves the neo4j versions`() {
         whenever(travisYamlClient.fetchTravisYaml()).thenReturn(Success(Fixtures.travisYml))
-        val neo4jVersions = listOf(Neo4jVersion("1.2.3", true))
+        val neo4jVersions = listOf(TravisNeo4jVersion("1.2.3", true))
         whenever(neo4jVersionParser.parse(Fixtures.travisYml)).thenReturn(Success(neo4jVersions))
 
         val result = liquigraphService.getNeo4jVersions()

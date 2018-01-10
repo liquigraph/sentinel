@@ -4,7 +4,7 @@ import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import org.liquigraph.sentinel.model.*
+import org.liquigraph.sentinel.effects.*
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 
@@ -13,7 +13,7 @@ class MavenCentralClient(private val httpClient: OkHttpClient,
                          private val gson: Gson,
                          @Value("\${mavenSearch.baseUri}") private val baseUri: String) {
 
-    fun fetchMavenCentralResults(): Result<List<MavenCentralArtifact>> {
+    fun fetchMavenCentralResults(): Result<List<MavenArtifact>> {
         val responseBody = responseBody()
 
         return when (responseBody) {
@@ -22,7 +22,7 @@ class MavenCentralClient(private val httpClient: OkHttpClient,
         }
     }
 
-    private fun extractDocs(responseBody: Success<String>): Result<List<MavenCentralArtifact>> {
+    private fun extractDocs(responseBody: Success<String>): Result<List<MavenArtifact>> {
         return try {
             val result = gson.fromJson(responseBody.content, MavenCentralResult::class.java)
             val response = result.response

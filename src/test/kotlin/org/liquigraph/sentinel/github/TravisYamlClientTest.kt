@@ -9,8 +9,8 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.liquigraph.sentinel.Fixtures
-import org.liquigraph.sentinel.model.Failure
-import org.liquigraph.sentinel.model.Success
+import org.liquigraph.sentinel.effects.Failure
+import org.liquigraph.sentinel.effects.Success
 
 class TravisYamlClientTest {
 

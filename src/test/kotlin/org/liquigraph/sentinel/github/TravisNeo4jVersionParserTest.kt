@@ -4,11 +4,11 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.liquigraph.sentinel.getContentOrThrow
 import org.yaml.snakeyaml.Yaml
-import org.liquigraph.sentinel.model.Failure
-import org.liquigraph.sentinel.model.Success
+import org.liquigraph.sentinel.effects.Failure
+import org.liquigraph.sentinel.effects.Success
 
-class Neo4jVersionParserTest {
-    val parser = Neo4jVersionParser(Yaml())
+class TravisNeo4jVersionParserTest {
+    val parser = TravisNeo4jVersionParser(Yaml())
 
     @Test
     fun `parses versions`() {
@@ -19,12 +19,12 @@ class Neo4jVersionParserTest {
             |      WITH_DOCKER=true
             |    - NEO_VERSION=2.2.2
             |      WITH_DOCKER=false
-        """.trimMargin()) as Success<List<Neo4jVersion>>
+        """.trimMargin()) as Success<List<TravisNeo4jVersion>>
 
         assertThat(versions.getContentOrThrow())
                 .containsOnlyOnce(
-                        Neo4jVersion("1.2.3", inDockerStore = true),
-                        Neo4jVersion("2.2.2", inDockerStore = false))
+                        TravisNeo4jVersion("1.2.3", inDockerStore = true),
+                        TravisNeo4jVersion("2.2.2", inDockerStore = false))
 
     }
 
@@ -34,9 +34,9 @@ class Neo4jVersionParserTest {
             |env:
             |  matrix:
             |    - NEO_VERSION=1.2.3
-        """.trimMargin()) as Success<List<Neo4jVersion>>
+        """.trimMargin()) as Success<List<TravisNeo4jVersion>>
 
-        assertThat(versions.getContentOrThrow()).containsOnlyOnce(Neo4jVersion("1.2.3", inDockerStore = false))
+        assertThat(versions.getContentOrThrow()).containsOnlyOnce(TravisNeo4jVersion("1.2.3", inDockerStore = false))
 
     }
 

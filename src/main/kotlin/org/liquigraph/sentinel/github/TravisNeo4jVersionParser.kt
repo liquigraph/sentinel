@@ -1,16 +1,16 @@
 package org.liquigraph.sentinel.github
 
-import org.liquigraph.sentinel.model.Failure
-import org.liquigraph.sentinel.model.Result
-import org.liquigraph.sentinel.model.Success
+import org.liquigraph.sentinel.effects.Failure
+import org.liquigraph.sentinel.effects.Result
+import org.liquigraph.sentinel.effects.Success
 import org.springframework.stereotype.Component
 import org.yaml.snakeyaml.Yaml
 import org.yaml.snakeyaml.error.YAMLException
 
 @Component
-class Neo4jVersionParser(val yaml: Yaml) {
+class TravisNeo4jVersionParser(val yaml: Yaml) {
 
-    fun parse(body: String): Result<List<Neo4jVersion>> {
+    fun parse(body: String): Result<List<TravisNeo4jVersion>> {
         val payload = parseBody(body)
         return when (payload) {
             is Failure -> Failure(payload.code, payload.message)
@@ -41,8 +41,8 @@ class Neo4jVersionParser(val yaml: Yaml) {
         }
     }
 
-    private fun extractVersions(matrix: List<String>): Result<List<Neo4jVersion>> {
-        val versions: List<Result<Neo4jVersion>> = matrix.mapIndexed { index, row -> parseRow(index, row) }
+    private fun extractVersions(matrix: List<String>): Result<List<TravisNeo4jVersion>> {
+        val versions: List<Result<TravisNeo4jVersion>> = matrix.mapIndexed { index, row -> parseRow(index, row) }
         val (failures, successes) = partition(versions)
 
         return if (failures.isNotEmpty()) {
@@ -61,7 +61,7 @@ class Neo4jVersionParser(val yaml: Yaml) {
                 }
             }
 
-    private fun parseRow(index: Int, row: String): Result<Neo4jVersion> {
+    private fun parseRow(index: Int, row: String): Result<TravisNeo4jVersion> {
         val pairs = row.split(" ")
                 .map {
                     val regex = Regex("([a-zA-Z_]*)=(.*)")
@@ -73,7 +73,7 @@ class Neo4jVersionParser(val yaml: Yaml) {
                 ?: return Failure(1002, "Missing 'NEO_VERSION' field at index $index")
 
         val withDocker = pairs.firstOrNull { it.first == "WITH_DOCKER" }
-        return Success(Neo4jVersion(neoVersion.second, withDocker?.second?.toBoolean() ?: false))
+        return Success(TravisNeo4jVersion(neoVersion.second, withDocker?.second?.toBoolean() ?: false))
     }
 
 }

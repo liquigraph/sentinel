@@ -1,15 +1,17 @@
 package org.liquigraph.sentinel.mavencentral
 
 import com.google.gson.Gson
+import com.google.gson.GsonBuilder
 import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.liquigraph.sentinel.Fixtures
-import org.liquigraph.sentinel.model.Failure
-import org.liquigraph.sentinel.model.MavenCentralArtifact
-import org.liquigraph.sentinel.model.Success
+import org.liquigraph.sentinel.effects.Failure
+import org.liquigraph.sentinel.effects.Success
+import org.liquigraph.sentinel.github.SemanticVersion
+import org.liquigraph.sentinel.github.SemanticVersionAdapter
 
 class MavenCentralClientTest {
 
@@ -18,7 +20,7 @@ class MavenCentralClientTest {
         val mockWebServer = MockWebServer()
         mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody(Fixtures.mavenCentralApiResponse))
         mockWebServer.start()
-        val subject = MavenCentralClient(OkHttpClient(), Gson(), "http://localhost:${mockWebServer.port}")
+        val subject = MavenCentralClient(OkHttpClient(), gson(), "http://localhost:${mockWebServer.port}")
 
         val result = subject.fetchMavenCentralResults()
 
@@ -30,11 +32,11 @@ class MavenCentralClientTest {
         val mockWebServer = MockWebServer()
         mockWebServer.enqueue(MockResponse().setResponseCode(404))
         mockWebServer.start()
-        val subject = MavenCentralClient(OkHttpClient(), Gson(), "http://localhost:${mockWebServer.port}")
+        val subject = MavenCentralClient(OkHttpClient(), gson(), "http://localhost:${mockWebServer.port}")
 
         val result = subject.fetchMavenCentralResults()
 
-        assertThat(result).isEqualTo(Failure<List<MavenCentralArtifact>>(404, "4xx error"))
+        assertThat(result).isEqualTo(Failure<List<MavenArtifact>>(404, "4xx error"))
     }
 
     @Test
@@ -42,11 +44,11 @@ class MavenCentralClientTest {
         val mockWebServer = MockWebServer()
         mockWebServer.enqueue(MockResponse().setResponseCode(500))
         mockWebServer.start()
-        val subject = MavenCentralClient(OkHttpClient(), Gson(), "http://localhost:${mockWebServer.port}")
+        val subject = MavenCentralClient(OkHttpClient(), gson(), "http://localhost:${mockWebServer.port}")
 
         val result = subject.fetchMavenCentralResults()
 
-        assertThat(result).isEqualTo(Failure<List<MavenCentralArtifact>>(500, "Unreachable http://localhost:${mockWebServer.port}"))
+        assertThat(result).isEqualTo(Failure<List<MavenArtifact>>(500, "Unreachable http://localhost:${mockWebServer.port}"))
     }
 
     @Test
@@ -54,11 +56,11 @@ class MavenCentralClientTest {
         val mockWebServer = MockWebServer()
         mockWebServer.enqueue(MockResponse().setResponseCode(758))
         mockWebServer.start()
-        val subject = MavenCentralClient(OkHttpClient(), Gson(), "http://localhost:${mockWebServer.port}")
+        val subject = MavenCentralClient(OkHttpClient(), gson(), "http://localhost:${mockWebServer.port}")
 
         val result = subject.fetchMavenCentralResults()
 
-        assertThat(result).isEqualTo(Failure<List<MavenCentralArtifact>>(758, "Unexpected error"))
+        assertThat(result).isEqualTo(Failure<List<MavenArtifact>>(758, "Unexpected error"))
     }
 
     @Test
@@ -66,7 +68,7 @@ class MavenCentralClientTest {
         val mockWebServer = MockWebServer()
         mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody("loliloljson"))
         mockWebServer.start()
-        val subject = MavenCentralClient(OkHttpClient(), Gson(), "http://localhost:${mockWebServer.port}")
+        val subject = MavenCentralClient(OkHttpClient(), gson(), "http://localhost:${mockWebServer.port}")
 
         val result = subject.fetchMavenCentralResults() as Failure
 
@@ -79,7 +81,7 @@ class MavenCentralClientTest {
         val mockWebServer = MockWebServer()
         mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody("{}"))
         mockWebServer.start()
-        val subject = MavenCentralClient(OkHttpClient(), Gson(), "http://localhost:${mockWebServer.port}")
+        val subject = MavenCentralClient(OkHttpClient(), gson(), "http://localhost:${mockWebServer.port}")
 
         val result = subject.fetchMavenCentralResults() as Failure
 
@@ -92,12 +94,19 @@ class MavenCentralClientTest {
         val mockWebServer = MockWebServer()
         mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody("{\"response\": {}}"))
         mockWebServer.start()
-        val subject = MavenCentralClient(OkHttpClient(), Gson(), "http://localhost:${mockWebServer.port}")
+        val subject = MavenCentralClient(OkHttpClient(), gson(), "http://localhost:${mockWebServer.port}")
 
         val result = subject.fetchMavenCentralResults() as Failure
 
         assertThat(result.code).isEqualTo(2002)
         assertThat(result.message).containsIgnoringCase("Could not find 'docs' field")
+    }
+
+
+    private fun gson(): Gson {
+        return GsonBuilder()
+                .registerTypeAdapter(SemanticVersion::class.java, SemanticVersionAdapter())
+                .create()
     }
 }
 

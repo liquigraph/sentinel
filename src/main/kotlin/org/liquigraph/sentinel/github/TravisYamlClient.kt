@@ -4,9 +4,9 @@ import com.google.gson.Gson
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.ResponseBody
-import org.liquigraph.sentinel.model.Result
-import org.liquigraph.sentinel.model.Success
-import org.liquigraph.sentinel.model.Failure
+import org.liquigraph.sentinel.effects.Result
+import org.liquigraph.sentinel.effects.Success
+import org.liquigraph.sentinel.effects.Failure
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import java.nio.charset.StandardCharsets

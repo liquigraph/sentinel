@@ -6,12 +6,12 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
+import org.liquigraph.sentinel.effects.Failure
+import org.liquigraph.sentinel.effects.Success
+import org.liquigraph.sentinel.github.TravisNeo4jVersion
 import org.liquigraph.sentinel.github.TravisYamlService
-import org.liquigraph.sentinel.github.Neo4jVersion
+import org.liquigraph.sentinel.mavencentral.MavenArtifact
 import org.liquigraph.sentinel.mavencentral.MavenCentralService
-import org.liquigraph.sentinel.model.Failure
-import org.liquigraph.sentinel.model.MavenCentralArtifact
-import org.liquigraph.sentinel.model.Success
 import java.io.PrintStream
 import java.nio.file.Files
 
@@ -44,8 +44,8 @@ class SentinelRunnerTest {
 
     @Test
     fun `runs runs ruuuuuns`() {
-        val travisVersions = listOf(Neo4jVersion("3.2.1", inDockerStore = true))
-        val mavenArtifacts = listOf(MavenCentralArtifact("org.neo4j", "neo4j", "3.2.9", "jar", listOf(".jar")))
+        val travisVersions = listOf(TravisNeo4jVersion("3.2.1", inDockerStore = true))
+        val mavenArtifacts = listOf(MavenArtifact("org.neo4j", "neo4j", "3.2.9".toVersion(), "jar", listOf(".jar")))
         whenever(liquigraphService.getNeo4jVersions()).thenReturn(
                 Success(travisVersions))
         whenever(mavenCentralService.getNeo4jArtifacts()).thenReturn(
@@ -60,7 +60,7 @@ class SentinelRunnerTest {
 
     @Test
     fun `reports Liquigraph service error`() {
-        val error = Failure<List<Neo4jVersion>>(42, "I hear you had an error...?")
+        val error = Failure<List<TravisNeo4jVersion>>(42, "I hear you had an error...?")
         whenever(liquigraphService.getNeo4jVersions()).thenReturn(error)
 
         runner.run()
@@ -71,8 +71,8 @@ class SentinelRunnerTest {
 
     @Test
     fun `reports Maven Central service error`() {
-        val travisVersions = listOf(Neo4jVersion("3.2.1", inDockerStore = true))
-        val error = Failure<List<MavenCentralArtifact>>(42, "I hear you had an error...?")
+        val travisVersions = listOf(TravisNeo4jVersion("3.2.1", inDockerStore = true))
+        val error = Failure<List<MavenArtifact>>(42, "I hear you had an error...?")
         whenever(liquigraphService.getNeo4jVersions()).thenReturn(
                 Success(travisVersions))
         whenever(mavenCentralService.getNeo4jArtifacts()).thenReturn(error)

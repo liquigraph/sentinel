@@ -5,9 +5,9 @@ import com.nhaarman.mockito_kotlin.whenever
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.liquigraph.sentinel.getContentOrThrow
-import org.liquigraph.sentinel.model.Failure
-import org.liquigraph.sentinel.model.MavenCentralArtifact
-import org.liquigraph.sentinel.model.Success
+import org.liquigraph.sentinel.effects.Failure
+import org.liquigraph.sentinel.effects.Success
+import org.liquigraph.sentinel.toVersion
 
 class MavenCentralServiceTest {
     val mavenCentralClient = mock<MavenCentralClient>()
@@ -17,31 +17,35 @@ class MavenCentralServiceTest {
     fun `returns version fetched by client`() {
         whenever(mavenCentralClient.fetchMavenCentralResults()).thenReturn(Success(
                 listOf(
-                        MavenCentralArtifact("org.neo4j", "neo4j", "1.2.3", "jar", listOf(".jar")),
-                        MavenCentralArtifact("org.neo4j", "neo4j", "2.3.4", "jar", listOf(".jar"))
+                        MavenArtifact("org.neo4j", "neo4j", "1.2.3".toVersion(), "jar", listOf(".jar")),
+                        MavenArtifact("org.neo4j", "neo4j", "2.3.4".toVersion(), "jar", listOf(".jar"))
                 )
         ))
 
         val neo4jVersions = subject.getNeo4jArtifacts().getContentOrThrow()
 
-        assertThat(neo4jVersions).extracting { it.version }.containsExactly("1.2.3", "2.3.4")
+        assertThat(neo4jVersions)
+                .extracting { it.version }
+                .containsExactly("1.2.3".toVersion(), "2.3.4".toVersion())
     }
 
     @Test
     fun `returns version fetched by client when they match the correct artifact attributes`() {
         whenever(mavenCentralClient.fetchMavenCentralResults()).thenReturn(Success(
                 listOf(
-                        MavenCentralArtifact("org.neo4j2", "neo4j", "1.2.3", "jar", listOf(".jar")),
-                        MavenCentralArtifact("org.neo4j", "neo4s", "2.3.5", "jar", listOf(".jar")),
-                        MavenCentralArtifact("org.neo4j", "neo4j", "2.3.4", "jar", listOf(".jar")),
-                        MavenCentralArtifact("org.neo4j", "neo4j", "2.3.6", "jar", listOf("-tests.jar")),
-                        MavenCentralArtifact("org.neo4j", "neo4j", "2.3.4", "pom", listOf(".pom"))
+                        MavenArtifact("org.neo4j2", "neo4j", "1.2.3".toVersion(), "jar", listOf(".jar")),
+                        MavenArtifact("org.neo4j", "neo4s", "2.3.5".toVersion(), "jar", listOf(".jar")),
+                        MavenArtifact("org.neo4j", "neo4j", "2.3.4".toVersion(), "jar", listOf(".jar")),
+                        MavenArtifact("org.neo4j", "neo4j", "2.3.6".toVersion(), "jar", listOf("-tests.jar")),
+                        MavenArtifact("org.neo4j", "neo4j", "2.3.4".toVersion(), "pom", listOf(".pom"))
                 )
         ))
 
         val neo4jVersions = subject.getNeo4jArtifacts().getContentOrThrow()
 
-        assertThat(neo4jVersions).extracting { it.version }.containsExactly("2.3.4")
+        assertThat(neo4jVersions)
+                .extracting { it.version }
+                .containsExactly("2.3.4".toVersion())
     }
 
     @Test
@@ -52,4 +56,5 @@ class MavenCentralServiceTest {
 
         assertThat(result).isEqualTo(Failure<List<String>>(404, "Not Found"))
     }
+
 }

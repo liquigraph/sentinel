@@ -1,6 +1,6 @@
 package org.liquigraph.sentinel
 
-import org.liquigraph.sentinel.model.MavenCentralArtifact
+import org.liquigraph.sentinel.mavencentral.MavenArtifact
 import java.nio.charset.StandardCharsets
 import java.util.*
 
@@ -48,7 +48,7 @@ object Fixtures {
     """.trimIndent()
 
     val mavenCentralApiResponse = """
-        {
+{
    "responseHeader":{
       "status":0,
       "QTime":9,
@@ -144,8 +144,8 @@ object Fixtures {
         """.trimIndent()
 
     val mavenCentralArtifacts = listOf(
-            MavenCentralArtifact("org.neo4j", "neo4j", "3.4.0-alpha04", "jar", listOf(".pom")),
-            MavenCentralArtifact("org.neo4j", "neo4j", "3.2.9", "jar", listOf("-sources.jar", ".jar")),
-            MavenCentralArtifact("org.neo4j", "neo4j", "2.3.12", "jar", listOf(".jar", ".pom"))
+            MavenArtifact("org.neo4j", "neo4j", "3.4.0-alpha04".toVersion(), "jar", listOf(".pom")),
+            MavenArtifact("org.neo4j", "neo4j", "3.2.9".toVersion(), "jar", listOf("-sources.jar", ".jar")),
+            MavenArtifact("org.neo4j", "neo4j", "2.3.12".toVersion(), "jar", listOf(".jar", ".pom"))
     )
 }
