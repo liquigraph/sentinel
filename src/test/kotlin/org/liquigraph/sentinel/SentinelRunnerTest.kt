@@ -56,8 +56,8 @@ class SentinelRunnerTest {
 
         runner.run()
 
-        assertThat(out.buffer).contains(travisVersions.toString())
-        assertThat(out.buffer).contains(mavenArtifacts.toString())
+        assertThat(out.buffer).contains(travisVersions.joinLines())
+        assertThat(out.buffer).contains(mavenArtifacts.joinLines())
         assertThat(err.buffer).isEmpty()
     }
 
@@ -83,7 +83,7 @@ class SentinelRunnerTest {
         runner.run()
 
         assertThat(err.buffer).contains(error.toString())
-        assertThat(out.buffer).contains(travisVersions.toString())
+        assertThat(out.buffer).contains(travisVersions.joinLines())
     }
 
     @Test
@@ -97,7 +97,7 @@ class SentinelRunnerTest {
 
         runner.run()
 
-        assertThat(out.buffer).contains(listOf(Addition("3.2.9".toVersion())).toString())
+        assertThat(out.buffer).contains(listOf(Addition("3.2.9".toVersion())).joinLines())
         assertThat(err.buffer).isEmpty()
     }
 }

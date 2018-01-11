@@ -17,15 +17,16 @@ class SentinelRunner(private val travisYamlService: TravisYamlService,
         val testedNeo4jVersions = travisYamlService.getNeo4jVersions()
         when (testedNeo4jVersions) {
             is Success -> {
-                println("Fetched from Github")
-                println(testedNeo4jVersions.content)
+                println("#### Fetched from Github")
+                println(testedNeo4jVersions.content.joinLines())
                 val mavenCentralNeo4jVersions = mavenCentralServices.getNeo4jArtifacts()
                 when (mavenCentralNeo4jVersions) {
                     is Success -> {
-                        println("Fetched from Maven Central")
-                        println(mavenCentralNeo4jVersions.content)
-                        println("Changing versions")
-                        println(liquigraphService.retainNewVersions(testedNeo4jVersions.content, mavenCentralNeo4jVersions.content))
+                        println("#### Fetched from Maven Central")
+                        println(mavenCentralNeo4jVersions.content.joinLines())
+                        println("#### Changing versions")
+                        val versionChanges = liquigraphService.retainNewVersions(testedNeo4jVersions.content, mavenCentralNeo4jVersions.content)
+                        println(versionChanges.joinLines())
 
                     }
                     is Failure -> {
@@ -41,3 +42,6 @@ class SentinelRunner(private val travisYamlService: TravisYamlService,
         }
     }
 }
+
+fun <T> List<T>.joinLines(): String = joinLines { it.toString() }
+fun <T> List<T>.joinLines(f: (T) -> String): String = joinToString("\n") { f(it) }
