@@ -2,10 +2,10 @@ package org.liquigraph.sentinel.github
 
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
-import org.liquigraph.sentinel.getContentOrThrow
-import org.yaml.snakeyaml.Yaml
 import org.liquigraph.sentinel.effects.Failure
 import org.liquigraph.sentinel.effects.Success
+import org.liquigraph.sentinel.getContentOrThrow
+import org.yaml.snakeyaml.Yaml
 
 class TravisNeo4jVersionParserTest {
     val parser = TravisNeo4jVersionParser(Yaml())
@@ -25,7 +25,6 @@ class TravisNeo4jVersionParserTest {
                 .containsOnlyOnce(
                         TravisNeo4jVersion("1.2.3", inDockerStore = true),
                         TravisNeo4jVersion("2.2.2", inDockerStore = false))
-
     }
 
     @Test
@@ -37,36 +36,6 @@ class TravisNeo4jVersionParserTest {
         """.trimMargin()) as Success<List<TravisNeo4jVersion>>
 
         assertThat(versions.getContentOrThrow()).containsOnlyOnce(TravisNeo4jVersion("1.2.3", inDockerStore = false))
-
-    }
-
-    @Test
-    fun `returns an error with invalid yaml`() {
-        val error = parser.parse("!-- fkldsjfliewfoi") as Failure
-
-        assertThat(error.code).isEqualTo(1000)
-        assertThat(error.message).containsIgnoringCase("invalid")
-
-    }
-
-    @Test
-    fun `returns an error without env field`() {
-        val error = parser.parse("") as Failure
-
-        assertThat(error.code).isEqualTo(1001)
-        assertThat(error.message).isEqualTo("Could not find 'env' field")
-    }
-
-    @Test
-    fun `returns an error without matrix field`() {
-        val error = parser.parse("""
-            |env:
-            |  cloud-atlas:
-            |    - NEO_VERSION=1.2.3
-        """.trimMargin()) as Failure
-
-        assertThat(error.code).isEqualTo(1001)
-        assertThat(error.message).isEqualTo("Could not find 'matrix' field")
     }
 
     @Test

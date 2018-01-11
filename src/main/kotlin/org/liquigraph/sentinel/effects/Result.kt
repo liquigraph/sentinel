@@ -4,7 +4,7 @@ interface Functor<out T> {
     fun <U> map(function: (T) -> U): Result<U>
 }
 
-public sealed class Result<out T>: Functor<T> {
+sealed class Result<out T>: Functor<T> {
     abstract fun <U> flatMap(function: (T) -> Result<U>): Result<U>
 }
 

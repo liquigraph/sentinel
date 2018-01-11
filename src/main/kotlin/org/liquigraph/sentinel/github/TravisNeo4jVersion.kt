@@ -2,7 +2,7 @@ package org.liquigraph.sentinel.github
 
 import kotlin.math.max
 
-data class TravisNeo4jVersion(val version: SemanticVersion, val inDockerStore: Boolean) {
+data class TravisNeo4jVersion(val version: SemanticVersion, val inDockerStore: Boolean = false) {
     constructor(version: String, inDockerStore: Boolean) : this(SemanticVersion.parse(version)!!, inDockerStore)
 }
 

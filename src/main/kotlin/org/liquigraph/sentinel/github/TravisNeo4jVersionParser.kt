@@ -8,29 +8,24 @@ import org.yaml.snakeyaml.Yaml
 import org.yaml.snakeyaml.error.YAMLException
 
 @Component
-class TravisNeo4jVersionParser(val yaml: Yaml) {
+class TravisNeo4jVersionParser(private val yaml: Yaml) {
 
     fun parse(body: String): Result<List<TravisNeo4jVersion>> {
         return parseBody(body)
-                .flatMap { readBuildMatrix(it) }
+                .map { readBuildMatrix(it) }
                 .flatMap { extractVersions(it) }
     }
 
-    private fun parseBody(body: String): Result<Map<String, Any>?> {
+    private fun parseBody(body: String): Result<RawTravisYaml> {
         return try {
-            Success(yaml.load<Map<String, Any>>(body))
+            Success(yaml.loadAs(body, RawTravisYaml::class.java))
         } catch (e: YAMLException) {
             Failure(1000, e.message ?: "Invalid YAML")
         }
     }
 
-    private fun readBuildMatrix(body: Map<String, Any>?): Result<List<String>> {
-        val env = if (body == null) null else body["env"] as Map<String, List<String>>?
-        return when {
-            env == null -> Failure(1001, "Could not find 'env' field")
-            env["matrix"] == null -> Failure(1001, "Could not find 'matrix' field")
-            else -> Success(env["matrix"]!!)
-        }
+    private fun readBuildMatrix(buildFile: RawTravisYaml): List<String> {
+        return buildFile.env.matrix
     }
 
     private fun extractVersions(matrix: List<String>): Result<List<TravisNeo4jVersion>> {

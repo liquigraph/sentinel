@@ -1,6 +1,8 @@
 package org.liquigraph.sentinel
 
 import org.liquigraph.sentinel.mavencentral.MavenArtifact
+import org.yaml.snakeyaml.Yaml
+import org.yaml.snakeyaml.representer.Representer
 import java.nio.charset.StandardCharsets
 import java.util.*
 
@@ -148,4 +150,11 @@ object Fixtures {
             MavenArtifact("org.neo4j", "neo4j", "3.2.9".toVersion(), "jar", listOf("-sources.jar", ".jar")),
             MavenArtifact("org.neo4j", "neo4j", "2.3.12".toVersion(), "jar", listOf(".jar", ".pom"))
     )
+
+
+    fun yamlParser(): Yaml {
+        val representer = Representer()
+        representer.propertyUtils.isSkipMissingProperties = true
+        return Yaml(representer)
+    }
 }

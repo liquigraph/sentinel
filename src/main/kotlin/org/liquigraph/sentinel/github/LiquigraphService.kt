@@ -3,9 +3,17 @@ package org.liquigraph.sentinel.github
 import org.liquigraph.sentinel.mavencentral.MavenArtifact
 import org.springframework.stereotype.Service
 
-sealed class VersionChange
-data class Update(val old: SemanticVersion, val new: SemanticVersion) : VersionChange()
-data class Addition(val new: SemanticVersion) : VersionChange()
+sealed class VersionChange {
+    abstract fun newVersion(): SemanticVersion
+}
+
+data class Update(val old: SemanticVersion, val new: SemanticVersion) : VersionChange() {
+    override fun newVersion() = new
+}
+
+data class Addition(val new: SemanticVersion) : VersionChange() {
+    override fun newVersion() = new
+}
 
 @Service
 class LiquigraphService {

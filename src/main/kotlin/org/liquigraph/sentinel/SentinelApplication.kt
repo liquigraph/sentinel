@@ -9,6 +9,7 @@ import org.springframework.boot.SpringApplication
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.context.annotation.Bean
 import org.yaml.snakeyaml.Yaml
+import org.yaml.snakeyaml.representer.Representer
 
 
 @SpringBootApplication
@@ -16,7 +17,9 @@ class SentinelApplication {
 
     @Bean
     fun yamlParser(): Yaml {
-        return Yaml()
+        val representer = Representer()
+        representer.propertyUtils.isSkipMissingProperties = true
+        return Yaml(representer)
     }
 
     @Bean
