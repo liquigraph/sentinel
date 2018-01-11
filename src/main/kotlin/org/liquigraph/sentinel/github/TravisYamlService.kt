@@ -1,9 +1,7 @@
 package org.liquigraph.sentinel.github
 
-import org.liquigraph.sentinel.effects.Result
-import org.liquigraph.sentinel.effects.Success
-import org.liquigraph.sentinel.effects.Failure
 import org.springframework.stereotype.Service
+import org.liquigraph.sentinel.effects.Result
 
 @Service
 class TravisYamlService(val travisYamlClient: TravisYamlClient,
@@ -11,11 +9,8 @@ class TravisYamlService(val travisYamlClient: TravisYamlClient,
 
     fun getNeo4jVersions(): Result<List<TravisNeo4jVersion>> {
 
-        val result = travisYamlClient.fetchTravisYaml()
-
-        return when (result) {
-            is Failure -> Failure(result.code, result.message)
-            is Success -> neo4jVersionParser.parse(result.content)
+        return travisYamlClient.fetchTravisYaml().flatMap {
+            neo4jVersionParser.parse(it)
         }
     }
 }

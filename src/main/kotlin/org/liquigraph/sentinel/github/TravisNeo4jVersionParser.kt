@@ -11,17 +11,9 @@ import org.yaml.snakeyaml.error.YAMLException
 class TravisNeo4jVersionParser(val yaml: Yaml) {
 
     fun parse(body: String): Result<List<TravisNeo4jVersion>> {
-        val payload = parseBody(body)
-        return when (payload) {
-            is Failure -> Failure(payload.code, payload.message)
-            is Success -> {
-                val buildMatrix = readBuildMatrix(payload.content)
-                when (buildMatrix) {
-                    is Failure -> Failure(buildMatrix.code, buildMatrix.message)
-                    is Success -> extractVersions(buildMatrix.content)
-                }
-            }
-        }
+        return parseBody(body)
+                .flatMap { readBuildMatrix(it) }
+                .flatMap { extractVersions(it) }
     }
 
     private fun parseBody(body: String): Result<Map<String, Any>?> {
