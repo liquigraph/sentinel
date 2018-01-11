@@ -12,7 +12,7 @@ import org.liquigraph.sentinel.Fixtures
 import org.liquigraph.sentinel.effects.Failure
 import org.liquigraph.sentinel.effects.Success
 
-class TravisYamlClientTest {
+class RawTravisYamlClientTest {
 
     lateinit var mockWebServer: MockWebServer
 

@@ -6,13 +6,12 @@ import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.assertj.core.api.Assertions
 import org.junit.Test
+import org.liquigraph.sentinel.Fixtures
 import org.liquigraph.sentinel.getContentOrThrow
-import org.liquigraph.sentinel.effects.Success
-import org.yaml.snakeyaml.Yaml
 import java.nio.charset.StandardCharsets
 import java.util.*
 
-class TravisYamlServiceIntegrationTest {
+class RawTravisYamlServiceIntegrationTest {
 
     @Test
     fun `retrieves the content of a file`() {
@@ -63,10 +62,10 @@ class TravisYamlServiceIntegrationTest {
                         Gson(),
                         OkHttpClient(),
                         "http://localhost:${mockWebServer.port}"),
-                TravisNeo4jVersionParser(Yaml())
+                TravisNeo4jVersionParser(Fixtures.yamlParser())
         )
 
-        val result = subject.getNeo4jVersions() as Success
+        val result = subject.getNeo4jVersions()
 
         Assertions.assertThat(result.getContentOrThrow()).containsExactly(
                 TravisNeo4jVersion("3.0.11", true),

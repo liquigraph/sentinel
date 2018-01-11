@@ -97,7 +97,11 @@
 				<configuration>
 					<compilerPlugins>
 						<plugin>spring</plugin>
+						<plugin>no-arg</plugin>
 					</compilerPlugins>
+					<pluginOptions>
+						<option>no-arg:annotation=org.liquigraph.sentinel.github.NoArgConstructor</option>
+					</pluginOptions>
 					<jvmTarget>1.8</jvmTarget>
 				</configuration>
 				<executions>
@@ -120,6 +124,11 @@
 					<dependency>
 						<groupId>org.jetbrains.kotlin</groupId>
 						<artifactId>kotlin-maven-allopen</artifactId>
+						<version>${kotlin.version}</version>
+					</dependency>
+					<dependency>
+						<groupId>org.jetbrains.kotlin</groupId>
+						<artifactId>kotlin-maven-noarg</artifactId>
 						<version>${kotlin.version}</version>
 					</dependency>
 				</dependencies>
