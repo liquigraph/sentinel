@@ -1,0 +1,25 @@
+dump(load(yamlstring)) == yamlstring iff
+
+```
+    @Test
+    fun name() {
+        val options = DumperOptions()
+        options.defaultFlowStyle = DumperOptions.FlowStyle.BLOCK
+        val yaml = Yaml(options)
+
+        val result = yaml.load<Map<String, Any>>("""
+            |env:
+            |  matrix:
+            |    - NEO_VERSION=1.2.3
+            |      WITH_DOCKER=true
+            |    - NEO_VERSION=2.2.2
+            |      WITH_DOCKER=false
+        """.trimMargin())
+
+        val writer = StringWriter()
+        yaml.dump(result, writer)
+        assertThat(writer.toString()).isEqualTo("foobar")
+    }
+```
+
+just need to remove newlines in existing yaml Liquigraph file
