@@ -44,7 +44,7 @@ class MavenCentralClient(private val httpClient: OkHttpClient,
 
     private fun responseBody(): Result<String> {
         val response = httpClient.newCall(Request.Builder()
-                .url("$baseUri/solrsearch/select?q=g%3A\"org.neo4j\"%20AND%20a%3A\"neo4j\"&rows=20&core=gav&wt=json")
+                .url("$baseUri/solrsearch/select?q=g%3A\"org.neo4j\"%20AND%20a%3A\"neo4j\"&core=gav&wt=json")
                 .build())
                 .execute()
 

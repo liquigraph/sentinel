@@ -14,6 +14,6 @@ class SemanticVersionAdapter: TypeAdapter<SemanticVersion>() {
             throw IllegalArgumentException("Null not supported for versions")
         }
         val raw = reader.nextString()
-        return SemanticVersion.parse(raw)!!
+        return SemanticVersion.parseEntire(raw)!!
     }
 }

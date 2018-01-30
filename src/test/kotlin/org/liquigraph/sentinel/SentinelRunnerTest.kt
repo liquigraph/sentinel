@@ -16,18 +16,23 @@ import org.liquigraph.sentinel.mavencentral.MavenArtifact
 import org.liquigraph.sentinel.mavencentral.MavenCentralService
 import java.io.PrintStream
 import java.nio.file.Files
+import java.util.logging.LogManager
 
 class SentinelRunnerTest {
 
-    lateinit var previousOut: PrintStream
-    lateinit var previousErr: PrintStream
-    lateinit var out: CapturedOutputStream
-    lateinit var err: CapturedOutputStream
+    private lateinit var previousOut: PrintStream
+    private lateinit var previousErr: PrintStream
+    private lateinit var out: CapturedOutputStream
+    private lateinit var err: CapturedOutputStream
 
-    val travisYamlService = mock<TravisYamlService>()
-    val mavenCentralService = mock<MavenCentralService>()
-    val liquigraphService = LiquigraphService()
-    val runner = SentinelRunner(travisYamlService, mavenCentralService, liquigraphService)
+    private val travisYamlService = mock<TravisYamlService>()
+    private val mavenCentralService = mock<MavenCentralService>()
+    private val liquigraphService = LiquigraphService()
+    private val runner = SentinelRunner(travisYamlService, mavenCentralService, liquigraphService)
+
+    init {
+        LogManager.getLogManager().reset()
+    }
 
     @Before
     fun prepare() {

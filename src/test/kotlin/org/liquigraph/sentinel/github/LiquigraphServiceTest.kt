@@ -6,7 +6,8 @@ import org.liquigraph.sentinel.mavencentral.MavenArtifact
 import org.liquigraph.sentinel.toVersion
 
 class LiquigraphServiceTest {
-    val liquigraphService = LiquigraphService()
+
+    private val liquigraphService = LiquigraphService()
 
     @Test
     fun `matches Maven Central largest versions only`() {

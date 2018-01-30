@@ -7,4 +7,4 @@ import org.liquigraph.sentinel.github.SemanticVersion
 fun <T> Result<T>.getContentOrThrow() =
         (this as? Success)?.content ?: throw RuntimeException("Failure: " + this)
 
-fun String.toVersion() = SemanticVersion.parse(this)!!
+fun String.toVersion() = SemanticVersion.parseEntire(this)!!
