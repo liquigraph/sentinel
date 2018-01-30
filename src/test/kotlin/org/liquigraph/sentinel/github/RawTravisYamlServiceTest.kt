@@ -9,9 +9,10 @@ import org.liquigraph.sentinel.effects.Failure
 import org.liquigraph.sentinel.effects.Success
 
 class RawTravisYamlServiceTest {
-    val travisYamlClient = mock<TravisYamlClient>()
-    val neo4jVersionParser = mock<TravisNeo4jVersionParser>()
-    val liquigraphService = TravisYamlService(travisYamlClient, neo4jVersionParser)
+
+    private val travisYamlClient = mock<TravisYamlClient>()
+    private val neo4jVersionParser = mock<TravisNeo4jVersionParser>()
+    private val liquigraphService = TravisYamlService(travisYamlClient, neo4jVersionParser)
 
     @Test
     fun `propagates the error`() {

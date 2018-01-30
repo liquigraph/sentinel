@@ -1,8 +1,10 @@
 package org.liquigraph.sentinel.github
 
 import com.google.gson.Gson
+import com.google.gson.JsonSyntaxException
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.Response
 import okhttp3.ResponseBody
 import org.liquigraph.sentinel.effects.Result
 import org.liquigraph.sentinel.effects.Success
@@ -18,23 +20,38 @@ class TravisYamlClient(val gson: Gson,
                        @Value("\${githubApi.baseUri}") val baseUri: String) {
 
     fun fetchTravisYaml(): Result<String> {
-        val response = httpClient.newCall(Request.Builder()
-                .url("$baseUri/repos/liquigraph/liquigraph/contents/.travis.yml")
+        val response = fetchFile("${baseUri}/repos/liquigraph/liquigraph/contents/.travis.yml")
+        return try {
+            decodeContent(response)
+        }
+        catch (e: JsonSyntaxException) {
+            Failure(1001, e.message!!)
+        }
+    }
+
+    private fun fetchFile(uri: String): Response {
+        return httpClient.newCall(Request.Builder()
+                .url(uri)
                 .build())
                 .execute()
+    }
 
+    private fun decodeContent(response: Response): Result<String> {
         return if (!response.isSuccessful) {
-            when (response.code()) {
-                in 400..499 -> Failure(response.code(), bodyAsMap(response.body()!!)["message"]!!)
-                in 500..599 -> Failure(response.code(), "Unreachable $baseUri")
-                else -> {
-                    Failure(response.code(), "Unexpected error")
-                }
-            }
-        }
-        else {
+            handleGithubErrors(response)
+        } else {
             val body = bodyAsMap(response.body()!!)
             Success(decode(sanitize(body["content"]!!)))
+        }
+    }
+
+    private fun handleGithubErrors(response: Response): Failure<String> {
+        return when (response.code()) {
+            in 400..499 -> Failure(response.code(), bodyAsMap(response.body()!!)["message"]!!)
+            in 500..599 -> Failure(response.code(), "Unreachable $baseUri")
+            else -> {
+                Failure(response.code(), "Unexpected error")
+            }
         }
     }
 

@@ -12,8 +12,13 @@ import org.liquigraph.sentinel.effects.Failure
 import org.liquigraph.sentinel.effects.Success
 import org.liquigraph.sentinel.github.SemanticVersion
 import org.liquigraph.sentinel.github.SemanticVersionAdapter
+import java.util.logging.LogManager
 
 class MavenCentralClientTest {
+
+    init {
+        LogManager.getLogManager().reset()
+    }
 
     @Test
     fun `retrieves the Neo4j Versions from Maven Central`() {

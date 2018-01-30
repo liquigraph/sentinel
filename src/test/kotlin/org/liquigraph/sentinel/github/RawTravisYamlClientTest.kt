@@ -11,8 +11,13 @@ import org.junit.Test
 import org.liquigraph.sentinel.Fixtures
 import org.liquigraph.sentinel.effects.Failure
 import org.liquigraph.sentinel.effects.Success
+import java.util.logging.LogManager
 
 class RawTravisYamlClientTest {
+
+    init {
+        LogManager.getLogManager().reset();
+    }
 
     lateinit var mockWebServer: MockWebServer
 
@@ -67,6 +72,16 @@ class RawTravisYamlClientTest {
         val error = client.fetchTravisYaml()
 
         assertThat(error).isEqualTo(Failure<String>(666, "Unexpected error"))
+    }
+
+    @Test
+    fun `returns invalid JSON error`() {
+        mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody("loliloljson"))
+
+        val result = client.fetchTravisYaml() as Failure
+
+        assertThat(result.code).isEqualTo(1001)
+        assertThat(result.message).containsIgnoringCase("Expected BEGIN_OBJECT but was STRING")
     }
 }
 

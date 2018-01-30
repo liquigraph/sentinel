@@ -8,7 +8,8 @@ import org.liquigraph.sentinel.getContentOrThrow
 import org.yaml.snakeyaml.Yaml
 
 class TravisNeo4jVersionParserTest {
-    val parser = TravisNeo4jVersionParser(Yaml())
+
+    private val parser = TravisNeo4jVersionParser(Yaml())
 
     @Test
     fun `parses versions`() {

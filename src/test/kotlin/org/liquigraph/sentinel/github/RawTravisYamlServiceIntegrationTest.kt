@@ -9,9 +9,14 @@ import org.junit.Test
 import org.liquigraph.sentinel.Fixtures
 import org.liquigraph.sentinel.getContentOrThrow
 import java.nio.charset.StandardCharsets
-import java.util.*
+import java.util.Base64
+import java.util.logging.LogManager
 
 class RawTravisYamlServiceIntegrationTest {
+
+    init {
+        LogManager.getLogManager().reset()
+    }
 
     @Test
     fun `retrieves the content of a file`() {
