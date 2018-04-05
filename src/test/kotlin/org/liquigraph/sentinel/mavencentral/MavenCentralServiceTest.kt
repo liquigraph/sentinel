@@ -10,8 +10,8 @@ import org.liquigraph.sentinel.effects.Success
 import org.liquigraph.sentinel.toVersion
 
 class MavenCentralServiceTest {
-    val mavenCentralClient = mock<MavenCentralClient>()
-    val subject = MavenCentralService(mavenCentralClient)
+    private val mavenCentralClient = mock<MavenCentralClient>()
+    private val subject = MavenCentralService(mavenCentralClient)
 
     @Test
     fun `returns version fetched by client`() {

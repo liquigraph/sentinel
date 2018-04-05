@@ -8,12 +8,12 @@ import com.google.gson.stream.JsonWriter
 class SemanticVersionAdapter: TypeAdapter<SemanticVersion>() {
 
     override fun write(out: JsonWriter?, value: SemanticVersion?) = TODO()
-    override fun read(reader: JsonReader): SemanticVersion {
+    override fun read(reader: JsonReader): SemanticVersion? {
         if (reader.peek() === JsonToken.NULL) {
             reader.nextNull()
             throw IllegalArgumentException("Null not supported for versions")
         }
         val raw = reader.nextString()
-        return SemanticVersion.parseEntire(raw)!!
+        return SemanticVersion.parseEntire(raw)
     }
 }

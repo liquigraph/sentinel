@@ -1,5 +1,7 @@
 package org.liquigraph.sentinel.github
 
+import org.liquigraph.sentinel.padAndZip
+
 data class SemanticVersion(val major: Int,
                            val minor: Int,
                            val patch: Int,
@@ -76,7 +78,7 @@ data class SemanticVersion(val major: Int,
         }
 
 
-        private fun <T> alwaysTrue(ignored: T) = true
+        private fun <T> alwaysTrue(@Suppress("UNUSED_PARAMETER") ignored: T) = true
 
     }
 }
