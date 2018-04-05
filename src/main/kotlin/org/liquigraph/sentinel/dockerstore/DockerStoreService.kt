@@ -9,14 +9,14 @@ import org.liquigraph.sentinel.effects.Result
 import org.liquigraph.sentinel.effects.Success
 import org.liquigraph.sentinel.github.SemanticVersion
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.stereotype.Component
+import org.springframework.stereotype.Service
 
-@Component
-class DockerStoreClient(private val httpClient: OkHttpClient,
-                        private val gson: Gson,
-                        @Value("\${dockerStore.baseUri}") private val baseUri: String) {
+@Service
+class DockerStoreService(private val httpClient: OkHttpClient,
+                         private val gson: Gson,
+                         @Value("\${dockerStore.baseUri}") private val baseUri: String) {
 
-    fun fetchDockerStoreResults(): Result<Set<SemanticVersion>> {
+    fun fetchDockerizedNeo4jVersions(): Result<Set<SemanticVersion>> {
         val responseBody = responseBody("$baseUri/api/content/v1/products/images/neo4j")
 
         return when (responseBody) {

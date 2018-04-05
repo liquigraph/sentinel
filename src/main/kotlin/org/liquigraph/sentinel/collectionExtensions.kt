@@ -2,8 +2,8 @@ package org.liquigraph.sentinel
 
 
 
-fun <T> List<T>.joinLines(): String = joinLines { it.toString() }
-fun <T> List<T>.joinLines(f: (T) -> String): String = joinToString("\n") { f(it) }
+fun <T> Collection<T>.joinLines(): String = joinLines { it.toString() }
+fun <T> Collection<T>.joinLines(f: (T) -> String): String = joinToString("\n") { f(it) }
 fun <T> List<T>.padAndZip(other: List<T>, zero: T): List<Pair<T, T>> {
     val paddingSize = kotlin.math.max(size, other.size)
     return pad(paddingSize, zero)
