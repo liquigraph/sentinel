@@ -6,12 +6,10 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
+import org.liquigraph.sentinel.dockerstore.DockerStoreService
 import org.liquigraph.sentinel.effects.Failure
 import org.liquigraph.sentinel.effects.Success
-import org.liquigraph.sentinel.github.Addition
-import org.liquigraph.sentinel.github.LiquigraphService
-import org.liquigraph.sentinel.github.TravisNeo4jVersion
-import org.liquigraph.sentinel.github.TravisYamlService
+import org.liquigraph.sentinel.github.*
 import org.liquigraph.sentinel.mavencentral.MavenArtifact
 import org.liquigraph.sentinel.mavencentral.MavenCentralService
 import java.io.PrintStream
@@ -27,8 +25,9 @@ class SentinelRunnerTest {
 
     private val travisYamlService = mock<TravisYamlService>()
     private val mavenCentralService = mock<MavenCentralService>()
+    private val dockerStoreService = mock<DockerStoreService>()
     private val liquigraphService = LiquigraphService()
-    private val runner = SentinelRunner(travisYamlService, mavenCentralService, liquigraphService)
+    private val runner = SentinelRunner(travisYamlService, mavenCentralService, liquigraphService, dockerStoreService)
 
     init {
         LogManager.getLogManager().reset()
@@ -54,15 +53,20 @@ class SentinelRunnerTest {
     fun `runs runs ruuuuuns`() {
         val travisVersions = listOf(TravisNeo4jVersion("3.2.1", inDockerStore = true))
         val mavenArtifacts = listOf(MavenArtifact("org.neo4j", "neo4j", "3.2.9".toVersion(), "jar", listOf(".jar")))
+        val dockerizedVersions = setOf("3.2.9".toVersion())
         whenever(travisYamlService.getNeo4jVersions()).thenReturn(
                 Success(travisVersions))
         whenever(mavenCentralService.getNeo4jArtifacts()).thenReturn(
                 Success(mavenArtifacts))
+        whenever(dockerStoreService.fetchDockerizedNeo4jVersions()).thenReturn(
+                Success(dockerizedVersions))
+
 
         runner.run()
 
         assertThat(out.buffer).contains(travisVersions.joinLines())
         assertThat(out.buffer).contains(mavenArtifacts.joinLines())
+        assertThat(out.buffer).contains(dockerizedVersions.joinLines())
         assertThat(err.buffer).isEmpty()
     }
 
@@ -92,6 +96,23 @@ class SentinelRunnerTest {
     }
 
     @Test
+    fun `reports Docker Store service error`() {
+        val travisVersions = listOf(TravisNeo4jVersion("3.2.1", inDockerStore = true))
+        val mavenArtifacts = listOf(MavenArtifact("org.neo4j", "neo4j", "3.2.9".toVersion(), "jar", listOf(".jar")))
+        val error = Failure<Set<SemanticVersion>>(42, "I hear you had an error...?")
+        whenever(travisYamlService.getNeo4jVersions()).thenReturn(
+                Success(travisVersions))
+        whenever(mavenCentralService.getNeo4jArtifacts()).thenReturn(
+                Success(mavenArtifacts))
+        whenever(dockerStoreService.fetchDockerizedNeo4jVersions()).thenReturn(error)
+
+        runner.run()
+
+        assertThat(err.buffer).contains(error.toString())
+        assertThat(out.buffer).contains(travisVersions.joinLines())
+    }
+
+    @Test
     fun `reports the version changes`() {
         val travisVersions = listOf(TravisNeo4jVersion("3.2.1", inDockerStore = true))
         val mavenArtifacts = listOf(MavenArtifact("org.neo4j", "neo4j", "3.2.9".toVersion(), "jar", listOf(".jar")))
@@ -99,10 +120,11 @@ class SentinelRunnerTest {
                 Success(travisVersions))
         whenever(mavenCentralService.getNeo4jArtifacts()).thenReturn(
                 Success(mavenArtifacts))
+        whenever(dockerStoreService.fetchDockerizedNeo4jVersions()).thenReturn(Success(setOf()))
 
         runner.run()
 
-        assertThat(out.buffer).contains(listOf(Addition("3.2.9".toVersion())).joinLines())
+        assertThat(out.buffer).contains(listOf(Addition("3.2.9".toVersion(), false)).joinLines())
         assertThat(err.buffer).isEmpty()
     }
 }
