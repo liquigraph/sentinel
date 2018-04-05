@@ -7,38 +7,115 @@ sealed class VersionChange {
     abstract fun newVersion(): SemanticVersion
 }
 
-data class Update(val old: SemanticVersion, val new: SemanticVersion) : VersionChange() {
+data class Update(val old: SemanticVersion, val new: SemanticVersion, val dockerized: Boolean) : VersionChange() {
     override fun newVersion() = new
 }
 
-data class Addition(val new: SemanticVersion) : VersionChange() {
+data class Addition(val new: SemanticVersion, val dockerized: Boolean) : VersionChange() {
     override fun newVersion() = new
 }
 
 @Service
 class LiquigraphService {
-    fun retainNewVersions(travisYmlVersions: List<TravisNeo4jVersion>, mavenArtifacts: List<MavenArtifact>): List<VersionChange> {
-        val travisVersions = travisYmlVersions.mapNotNull { it.version }
-        val travisMajorVersions = travisVersions.map { it.major }
-        return mavenArtifacts.mapNotNull { it.version }
-                .filter { travisMajorVersions.contains(it.major) }
+
+    fun computeChanges(existingVersionData: List<TravisNeo4jVersion>,
+                       mavenArtifacts: List<MavenArtifact>,
+                       dockerizedVersions: Set<SemanticVersion>): List<VersionChange> {
+
+
+        val existingVersions = existingVersionData.map { it.version }.sortedDescending()
+        val mininumExistingVersion = existingVersions.last()
+        val upperBound = existingVersions.first().major
+        return mavenArtifacts
+                .mapNotNull { it.version }
                 .filter { it.isStable() }
+                .filterNot { it < mininumExistingVersion || it.major > upperBound }
+                .sorted()
                 .groupBy { Pair(it.major, it.minor) }
-                .mapNotNull { (majorMinor, mavenVersions) ->
-                    val mavenVersion = mavenVersions.max()!!
-                    val travisVersion = getLatestUpdateableVersion(travisVersions, majorMinor.first, majorMinor.second)
+                .flatMap {
+                    val existingInBranch = existingVersionData.filter { ex -> matchesBranch(ex.version, it.key) }
                     when {
-                        travisVersion == null -> Addition(mavenVersion)
-                        travisVersion.compareTo(mavenVersion) != 0 -> Update(travisVersion, mavenVersion)
-                        else -> null
+                        existingInBranch.isNotEmpty() -> {
+                            existingBranchChanges(it.value, existingInBranch, dockerizedVersions, mininumExistingVersion)
+                        }
+                        else ->
+                            newBranchAdditions(it.value, dockerizedVersions)
                     }
                 }
     }
 
-    private fun getLatestUpdateableVersion(travisVersions: List<SemanticVersion>, major: Int, minor: Int) =
-            travisVersions
-                    .sortedDescending()
-                    .dropLast(1) // we retain the lowest version to be confident we are compatible with, e.g., 3.0.0 -> 3.4.2
-                    .find { it.major == major && it.minor == minor }
+    private fun matchesBranch(ex: SemanticVersion, branch: Pair<Int, Int>): Boolean = Pair(ex.major, ex.minor) == branch
 
+    private fun existingBranchChanges(newVersions: List<SemanticVersion>,
+                                      existingVersions: List<TravisNeo4jVersion>,
+                                      dockerizedVersions: Set<SemanticVersion>,
+                                      mininumExistingVersion: SemanticVersion): List<VersionChange> {
+
+        val minimumInBranch = existingVersions.minBy { it.version }!!
+        return when {
+            !inSmallestBranch(minimumInBranch, mininumExistingVersion) ->
+                computeChanges(newVersions, dockerizedVersions, existingVersions.maxBy { it.version })
+            else -> {
+                val existingButMinimum = existingVersions.drop(1).maxBy { it.version }
+                val changes = computeChanges(newVersions.filterNot { it == mininumExistingVersion }, dockerizedVersions, existingButMinimum)
+                if (!minimumInBranch.inDockerStore && dockerizedVersions.contains(mininumExistingVersion)) {
+                    listOf(Update(mininumExistingVersion, mininumExistingVersion, dockerized = true)).plus(changes)
+                } else changes
+            }
+        }
+    }
+
+    private fun inSmallestBranch(minimumInBranch: TravisNeo4jVersion, mininumExistingVersion: SemanticVersion) =
+            minimumInBranch.version == mininumExistingVersion
+
+    private fun computeChanges(newVersions: List<SemanticVersion>,
+                               dockerizedVersions: Set<SemanticVersion>,
+                               existing: TravisNeo4jVersion?): List<VersionChange> {
+
+        val new = newVersions.lastOrNull()
+        val newIsDockerized = dockerizedVersions.contains(new)
+        return when {
+            new == null -> listOf()
+            existing == null -> listOf(Addition(new, newIsDockerized))
+            new == existing.version ->
+                if (!newIsDockerized || existing.inDockerStore) listOf()
+                else {
+                    listOf(Update(new, new, dockerized = true))
+                }
+            new > existing.version -> {
+                computeUpdates(existing, newIsDockerized, new, newVersions, dockerizedVersions)
+            }
+            else -> listOf()
+        }
+    }
+
+    private fun computeUpdates(existing: TravisNeo4jVersion, newIsDockerized: Boolean, new: SemanticVersion, newVersions: List<SemanticVersion>, dockerizedVersions: Set<SemanticVersion>): List<VersionChange> {
+        return if (!existing.inDockerStore || newIsDockerized) {
+            listOf(Update(existing.version, new, dockerized = newIsDockerized))
+        } else {
+            val addition = Addition(new, dockerized = false)
+            val secondHighestNew = newVersions.lastOrNull { it > new && dockerizedVersions.contains(it) }
+            if (secondHighestNew != null) {
+                listOf(addition, Update(existing.version, secondHighestNew, dockerized = true))
+            } else {
+                listOf(addition)
+            }
+        }
+    }
+
+    private fun newBranchAdditions(newVersions: List<SemanticVersion>, dockerizedVersions: Set<SemanticVersion>): List<Addition> {
+        val highestNew = newVersions.last()
+        return if (dockerizedVersions.contains(highestNew)) listOf(Addition(highestNew, dockerized = true))
+        else {
+            val highestDockerized = newVersions.lastOrNull { it < highestNew && dockerizedVersions.contains(it) }
+            if (highestDockerized == null) {
+                listOf(Addition(highestNew, dockerized = false))
+            } else {
+                listOf(
+                        Addition(highestNew, dockerized = false),
+                        Addition(highestDockerized, dockerized = true)
+                )
+            }
+        }
+    }
 }

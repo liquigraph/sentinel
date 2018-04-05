@@ -12,6 +12,7 @@ class LiquigraphServiceTest {
     @Test
     fun `matches Maven Central largest versions only`() {
         val mavenArtifacts = listOf(
+                MavenArtifact("org.neo4j", "neo4j", "1.0.0".toVersion(), "jar", listOf(".jar")),
                 MavenArtifact("org.neo4j", "neo4j", "1.2.3".toVersion(), "jar", listOf(".jar")),
                 MavenArtifact("org.neo4j", "neo4j", "1.2.4".toVersion(), "jar", listOf(".jar")),
                 MavenArtifact("org.neo4j", "neo4j", "1.2.5".toVersion(), "jar", listOf(".jar"))
@@ -22,9 +23,9 @@ class LiquigraphServiceTest {
                 TravisNeo4jVersion("1.0.0".toVersion(), false)
         )
 
-        val result = liquigraphService.retainNewVersions(travisYmlVersions, mavenArtifacts)
+        val result = liquigraphService.computeChanges(travisYmlVersions, mavenArtifacts, setOf())
 
-        assertThat(result).containsExactly(Addition("1.2.5".toVersion()))
+        assertThat(result).containsExactly(Addition("1.2.5".toVersion(), false))
     }
 
     @Test
@@ -33,18 +34,18 @@ class LiquigraphServiceTest {
                 MavenArtifact("org.neo4j", "neo4j", "1.2.3".toVersion(), "jar", listOf(".jar")),
                 MavenArtifact("org.neo4j", "neo4j", "1.2.4".toVersion(), "jar", listOf(".jar")),
                 MavenArtifact("org.neo4j", "neo4j", "1.2.5".toVersion(), "jar", listOf(".jar")),
+                MavenArtifact("org.neo4j", "neo4j", "2.0.0".toVersion(), "jar", listOf(".jar")),
                 MavenArtifact("org.neo4j", "neo4j", "2.1.2".toVersion(), "jar", listOf(".jar")),
                 MavenArtifact("org.neo4j", "neo4j", "2.1.6".toVersion(), "jar", listOf(".jar"))
         )
 
         val travisYmlVersions = listOf(
-                TravisNeo4jVersion("1.0.0".toVersion(), false),
                 TravisNeo4jVersion("2.0.0".toVersion(), false)
         )
 
-        val result = liquigraphService.retainNewVersions(travisYmlVersions, mavenArtifacts)
+        val result = liquigraphService.computeChanges(travisYmlVersions, mavenArtifacts, setOf())
 
-        assertThat(result).containsExactly(Addition("1.2.5".toVersion()), Addition("2.1.6".toVersion()))
+        assertThat(result).containsExactly(Addition("2.1.6".toVersion(), false))
     }
 
     @Test
@@ -54,6 +55,7 @@ class LiquigraphServiceTest {
                 MavenArtifact("org.neo4j", "neo4j", "1.2.4".toVersion(), "jar", listOf(".jar")),
                 MavenArtifact("org.neo4j", "neo4j", "1.2.5".toVersion(), "jar", listOf(".jar")),
                 MavenArtifact("org.neo4j", "neo4j", "2.0.0".toVersion(), "jar", listOf(".jar")),
+                MavenArtifact("org.neo4j", "neo4j", "2.0.4".toVersion(), "jar", listOf(".jar")),
                 MavenArtifact("org.neo4j", "neo4j", "2.0.9".toVersion(), "jar", listOf(".jar")),
                 MavenArtifact("org.neo4j", "neo4j", "2.1.2".toVersion(), "jar", listOf(".jar")),
                 MavenArtifact("org.neo4j", "neo4j", "2.1.6".toVersion(), "jar", listOf(".jar")),
@@ -67,12 +69,12 @@ class LiquigraphServiceTest {
                 TravisNeo4jVersion("2.1.2".toVersion(), false)
         )
 
-        val result = liquigraphService.retainNewVersions(travisYmlVersions, mavenArtifacts)
+        val result = liquigraphService.computeChanges(travisYmlVersions, mavenArtifacts, setOf())
 
         assertThat(result).containsExactly(
-                Update("2.0.4".toVersion(), "2.0.9".toVersion()),
-                Update("2.1.2".toVersion(), "2.1.6".toVersion()),
-                Addition("2.2.5".toVersion())
+                Update("2.0.4".toVersion(), "2.0.9".toVersion(), false),
+                Update("2.1.2".toVersion(), "2.1.6".toVersion(), false),
+                Addition("2.2.5".toVersion(), false)
         )
     }
 
@@ -88,10 +90,10 @@ class LiquigraphServiceTest {
                 TravisNeo4jVersion("2.0.4".toVersion(), false)
         )
 
-        val result = liquigraphService.retainNewVersions(travisYmlVersions, mavenArtifacts)
+        val result = liquigraphService.computeChanges(travisYmlVersions, mavenArtifacts, setOf())
 
         assertThat(result).containsExactly(
-                Update("2.0.4".toVersion(), "2.0.9".toVersion())
+                Update("2.0.4".toVersion(), "2.0.9".toVersion(), false)
         )
     }
 
@@ -106,16 +108,17 @@ class LiquigraphServiceTest {
                 TravisNeo4jVersion("2.0.0".toVersion(), false)
         )
 
-        val result = liquigraphService.retainNewVersions(travisYmlVersions, mavenArtifacts)
+        val result = liquigraphService.computeChanges(travisYmlVersions, mavenArtifacts, setOf())
 
         assertThat(result).containsExactly(
-                Addition("2.0.9".toVersion())
+                Addition("2.0.9".toVersion(), false)
         )
     }
 
     @Test
     fun `updates versions where the latest is not in Travis`() {
         val mavenArtifacts = listOf(
+                MavenArtifact("org.neo4j", "neo4j", "1.0.2".toVersion(), "jar", listOf(".jar")),
                 MavenArtifact("org.neo4j", "neo4j", "1.2.3".toVersion(), "jar", listOf(".jar")),
                 MavenArtifact("org.neo4j", "neo4j", "1.2.4".toVersion(), "jar", listOf(".jar")),
                 MavenArtifact("org.neo4j", "neo4j", "1.2.5".toVersion(), "jar", listOf(".jar")),
@@ -129,23 +132,83 @@ class LiquigraphServiceTest {
                 TravisNeo4jVersion("2.1.6".toVersion(), false)
         )
 
-        val result = liquigraphService.retainNewVersions(travisYmlVersions, mavenArtifacts)
+        val result = liquigraphService.computeChanges(travisYmlVersions, mavenArtifacts, setOf())
 
-        assertThat(result).containsExactly(Update("1.2.4".toVersion(), "1.2.5".toVersion()))
+        assertThat(result).containsExactly(Update("1.2.4".toVersion(), "1.2.5".toVersion(), false))
     }
 
     @Test
     fun `excludes unstable versions`() {
         val mavenArtifacts = listOf(
-                MavenArtifact("org.neo4j", "neo4j", "1.2.3-alpha05".toVersion(), "jar", listOf(".jar"))
+                MavenArtifact("org.neo4j", "neo4j", "1.0.0".toVersion(), "jar", listOf(".jar")),
+                MavenArtifact("org.neo4j", "neo4j", "1.0.3-alpha05".toVersion(), "jar", listOf(".jar"))
         )
+        val travisYmlVersions = listOf(TravisNeo4jVersion("1.0.0".toVersion(), false))
 
-        val travisYmlVersions = listOf(
-                TravisNeo4jVersion("1.0.0".toVersion(), false)
-        )
-
-        val result = liquigraphService.retainNewVersions(travisYmlVersions, mavenArtifacts)
+        val result = liquigraphService.computeChanges(travisYmlVersions, mavenArtifacts, setOf())
 
         assertThat(result).isEmpty()
+    }
+
+    @Test
+    fun `adds versions that become dockerized`() {
+        val mavenArtifacts = listOf(
+                MavenArtifact("org.neo4j", "neo4j", "1.0.0".toVersion(), "jar", listOf(".jar")),
+                MavenArtifact("org.neo4j", "neo4j", "1.2.3".toVersion(), "jar", listOf(".jar"))
+        )
+        val travisYmlVersions = listOf(TravisNeo4jVersion("1.0.0".toVersion(), false))
+        val dockerizedVersions = setOf("1.2.3".toVersion())
+
+        val result = liquigraphService.computeChanges(travisYmlVersions, mavenArtifacts, dockerizedVersions)
+
+        assertThat(result).containsExactly(Addition("1.2.3".toVersion(), dockerized = true))
+    }
+
+    @Test
+    fun `updates versions that become dockerized`() {
+        val mavenArtifacts = listOf(
+                MavenArtifact("org.neo4j", "neo4j", "1.0.0".toVersion(), "jar", listOf(".jar")),
+                MavenArtifact("org.neo4j", "neo4j", "1.2.3".toVersion(), "jar", listOf(".jar"))
+        )
+        val travisYmlVersions = listOf(
+                TravisNeo4jVersion("1.0.0".toVersion(), inDockerStore = false),
+                TravisNeo4jVersion("1.2.3".toVersion(), inDockerStore = false)
+        )
+        val dockerizedVersions = setOf("1.2.3".toVersion())
+
+        val result = liquigraphService.computeChanges(travisYmlVersions, mavenArtifacts, dockerizedVersions)
+
+        assertThat(result).containsExactly(Update("1.2.3".toVersion(), "1.2.3".toVersion(), dockerized = true))
+    }
+
+    @Test
+    fun `Dockerizes minimum Travis version`() {val mavenArtifacts = listOf(
+            MavenArtifact("org.neo4j", "neo4j", "1.2.3".toVersion(), "jar", listOf(".jar"))
+    )
+        val travisYmlVersions = listOf(
+                TravisNeo4jVersion("1.2.3".toVersion(), inDockerStore = false)
+        )
+        val dockerizedVersions = setOf("1.2.3".toVersion())
+
+        val result = liquigraphService.computeChanges(travisYmlVersions, mavenArtifacts, dockerizedVersions)
+
+        assertThat(result).containsExactly(Update("1.2.3".toVersion(), "1.2.3".toVersion(), dockerized = true))
+    }
+
+    @Test
+    fun `appends newest non-Dockerized version after latest Dockerized one`() {val mavenArtifacts = listOf(
+            MavenArtifact("org.neo4j", "neo4j", "1.2.3".toVersion(), "jar", listOf(".jar")),
+            MavenArtifact("org.neo4j", "neo4j", "1.2.4".toVersion(), "jar", listOf(".jar")),
+            MavenArtifact("org.neo4j", "neo4j", "1.2.5".toVersion(), "jar", listOf(".jar"))
+    )
+        val travisYmlVersions = listOf(
+                TravisNeo4jVersion("1.2.3".toVersion(), inDockerStore = false),
+                TravisNeo4jVersion("1.2.4".toVersion(), inDockerStore = true)
+        )
+        val dockerizedVersions = setOf("1.2.4".toVersion())
+
+        val result = liquigraphService.computeChanges(travisYmlVersions, mavenArtifacts, dockerizedVersions)
+
+        assertThat(result).containsExactly(Addition("1.2.5".toVersion(), dockerized = false))
     }
 }
