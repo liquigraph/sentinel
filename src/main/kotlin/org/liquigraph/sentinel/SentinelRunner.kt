@@ -22,10 +22,11 @@ class SentinelRunner(private val travisYamlService: TravisYamlService,
                 val mavenCentralNeo4jVersions = mavenCentralServices.getNeo4jArtifacts()
                 when (mavenCentralNeo4jVersions) {
                     is Success -> {
-                        println("#### Fetched from Maven Central")
-                        println(mavenCentralNeo4jVersions.content.joinLines())
+                        println("#### Fetched from Maven Central (showing first 20 elements for brevity)")
+                        val mavenCentralVersions = mavenCentralNeo4jVersions.content
+                        println(mavenCentralVersions.take(20).joinLines())
                         println("#### Changing versions")
-                        val versionChanges = liquigraphService.retainNewVersions(testedNeo4jVersions.content, mavenCentralNeo4jVersions.content)
+                        val versionChanges = liquigraphService.retainNewVersions(testedNeo4jVersions.content, mavenCentralVersions)
                         println(versionChanges.joinLines())
 
                     }
@@ -42,6 +43,3 @@ class SentinelRunner(private val travisYamlService: TravisYamlService,
         }
     }
 }
-
-fun <T> List<T>.joinLines(): String = joinLines { it.toString() }
-fun <T> List<T>.joinLines(f: (T) -> String): String = joinToString("\n") { f(it) }

@@ -5,9 +5,7 @@ import com.google.gson.GsonBuilder
 import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
-import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.*
-import org.bouncycastle.crypto.tls.ConnectionEnd.client
 import org.junit.After
 import org.junit.Before
 import org.junit.Test

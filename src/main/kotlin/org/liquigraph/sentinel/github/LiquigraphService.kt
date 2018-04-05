@@ -18,9 +18,9 @@ data class Addition(val new: SemanticVersion) : VersionChange() {
 @Service
 class LiquigraphService {
     fun retainNewVersions(travisYmlVersions: List<TravisNeo4jVersion>, mavenArtifacts: List<MavenArtifact>): List<VersionChange> {
-        val travisVersions = travisYmlVersions.map { it.version }
+        val travisVersions = travisYmlVersions.mapNotNull { it.version }
         val travisMajorVersions = travisVersions.map { it.major }
-        return mavenArtifacts.map { it.version }
+        return mavenArtifacts.mapNotNull { it.version }
                 .filter { travisMajorVersions.contains(it.major) }
                 .filter { it.isStable() }
                 .groupBy { Pair(it.major, it.minor) }

@@ -11,7 +11,7 @@ data class MavenArtifact(
         @SerializedName("a")
         var artifactId: String,
         @SerializedName("v")
-        var version: SemanticVersion,
+        var version: SemanticVersion?,
         @SerializedName("p")
         var packaging: String,
         @SerializedName("ec")
