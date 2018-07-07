@@ -20,19 +20,24 @@ class TravisYamlService(val travisYamlClient: TravisYamlClient,
 
     fun update(versionChanges : List<VersionChange>): Result<String> {
         return travisYamlClient.fetchTravisYaml().flatMap {
+            val initialVersions = (neo4jVersionParser.parse(it) as Success<List<TravisNeo4jVersion>>).content.toMutableList()
             val content = yamlParser.load<Map<String, Any>>(it)
-            val matrix = (content["env"] as Map<String, Any>)["matrix"] as MutableList<String>
 
-            versionChanges.filterIsInstance(Addition::class.java)
-                    .map { "NEO_VERSION=${it.newVersion()} WITH_DOCKER=${it.dockerized}" }
-                    .forEach({ matrix.add(it) })
+            initialVersions.addAll(versionChanges.filterIsInstance(Addition::class.java) //
+                                                 .map { TravisNeo4jVersion(it.new, it.dockerized) } )
 
-            //matrix.sortWith(Comparator { o1, o2 -> SemanticVersion.parseEntire(o1)!!.compareTo(SemanticVersion.parseEntire(o2)!!) })
+            val matrix = initialVersions.sortedBy { it.version } //
+                                        .map { "NEO_VERSION=${it.version} WITH_DOCKER=${it.inDockerStore}" } //
+                                        .toList()
 
-            val writer = StringWriter()
-            yamlParser.dump(content, writer)
+            val initialMatrix = (content["env"] as Map<String, MutableList<String>>)["matrix"]!!
+            initialMatrix.clear()
+            initialMatrix.addAll(matrix)
 
-            Success(writer.toString())
+            val resultContent = StringWriter()
+            yamlParser.dump( content, resultContent )
+
+            Success( resultContent.toString() )
         }
     }
 }

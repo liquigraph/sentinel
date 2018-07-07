@@ -21,10 +21,8 @@ object Fixtures {
     |  matrix:
     |    - NEO_VERSION=3.0.11
     |      WITH_DOCKER=true
-    |      EXTRA_PROFILES=-Pwith-neo4j-io
     |    - NEO_VERSION=3.1.7
     |      WITH_DOCKER=false
-    |      EXTRA_PROFILES=-Pwith-neo4j-io
 """.trimMargin()
 
     private val travisYmlBase64 = Base64.getEncoder().encodeToString(travisYml.toByteArray(StandardCharsets.UTF_8))
