@@ -28,12 +28,11 @@ class RawTravisYamlServiceTest {
         yamlParser = Yaml(options)
         liquigraphService = TravisYamlService(travisYamlClient, neo4jVersionParser, yamlParser)
 
+        whenever( neo4jVersionParser.parse(anyString()) ) //
+                .thenReturn( Success(listOf(TravisNeo4jVersion("3.0.11".toVersion(), true), TravisNeo4jVersion("3.1.7".toVersion())) ) )
 
-        whenever(neo4jVersionParser.parse(anyString()) ).thenReturn(Success(listOf(TravisNeo4jVersion("3.0.11".toVersion(), true), //
-                                                                                  TravisNeo4jVersion("3.1.7".toVersion())))
-        )
-
-        whenever(travisYamlClient.fetchTravisYaml()).thenReturn(Success(Fixtures.travisYml))
+        whenever( travisYamlClient.fetchTravisYaml() ) //
+                .thenReturn(Success(Fixtures.travisYml))
     }
 
     @Test
@@ -77,16 +76,18 @@ class RawTravisYamlServiceTest {
 
     @Test
     fun `updated version should preserved order` () {
-        val result = liquigraphService.update(listOf(Addition("3.0.12".toVersion(), false)))
+    // Given
+        val newNonDockerizedVersion = listOf(Addition("3.0.12".toVersion(), false))
 
-        val updatedContent = yamlParser.load<MutableMap<String, Any>>(result.getContentOrThrow())
+    // When
+        val result = liquigraphService.update( newNonDockerizedVersion )
 
-        val updatedEnv = updatedContent.remove("env") as Map<String, List<String>>
+    // Then
+        val updatedContent = yamlParser.load<MutableMap<String, Any>>( result.getContentOrThrow() )
+        val matrixAfterUpdate = (updatedContent["env"] as Map<String, List<String>>)["matrix"]
 
-        assertThat(updatedEnv["matrix"])
-                .containsExactly(
-                        "NEO_VERSION=3.0.11 WITH_DOCKER=true",
-                        "NEO_VERSION=3.0.12 WITH_DOCKER=false",
-                        "NEO_VERSION=3.1.7 WITH_DOCKER=false")
+        assertThat( matrixAfterUpdate ).containsExactly("NEO_VERSION=3.0.11 WITH_DOCKER=true", //
+                                                        "NEO_VERSION=3.0.12 WITH_DOCKER=false", //
+                                                        "NEO_VERSION=3.1.7 WITH_DOCKER=false")
     }
 }

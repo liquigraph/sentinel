@@ -22,34 +22,22 @@ class TravisYamlService(val travisYamlClient: TravisYamlClient,
         return travisYamlClient.fetchTravisYaml().flatMap {
             val initialVersions = (neo4jVersionParser.parse(it) as Success<List<TravisNeo4jVersion>>).content.toMutableList()
             val content = yamlParser.load<Map<String, Any>>(it)
-            val initialMatrix = (content["env"] as Map<String, Any>)["matrix"] as MutableList<String>
 
+            initialVersions.addAll(versionChanges.filterIsInstance(Addition::class.java) //
+                                                 .map { TravisNeo4jVersion(it.new, it.dockerized) } )
 
-            versionChanges.filterIsInstance(Addition::class.java)
-                    .map { TravisNeo4jVersion(it.new, it.dockerized) }
-                    .forEach {
-                        initialVersions.add(it)
-                    }
+            val matrix = initialVersions.sortedBy { it.version } //
+                                        .map { "NEO_VERSION=${it.version} WITH_DOCKER=${it.inDockerStore}" } //
+                                        .toList()
 
-            initialVersions.sortBy { it.version }
-
-            val matrix = initialVersions.map { "NEO_VERSION=${it.version} WITH_DOCKER=${it.inDockerStore}" }
-                    .toList()
-
+            val initialMatrix = (content["env"] as Map<String, MutableList<String>>)["matrix"]!!
             initialMatrix.clear()
             initialMatrix.addAll(matrix)
 
-//                            .map { "NEO_VERSION=${it.newVersion()} WITH_DOCKER=${it.dockerized}" }
-//                            .forEach({ matrix.add(it) })
+            val resultContent = StringWriter()
+            yamlParser.dump( content, resultContent )
 
-
-
-            //matrix.sortWith(Comparator { o1, o2 -> SemanticVersion.parseEntire(o1)!!.compareTo(SemanticVersion.parseEntire(o2)!!) })
-
-            val writer = StringWriter()
-            yamlParser.dump(content, writer)
-
-            Success(writer.toString())
+            Success( resultContent.toString() )
         }
     }
 }
