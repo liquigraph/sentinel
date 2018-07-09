@@ -67,7 +67,8 @@ class RawTravisYamlServiceIntegrationTest {
                         Gson(),
                         OkHttpClient(),
                         "http://localhost:${mockWebServer.port}"),
-                TravisNeo4jVersionParser(Fixtures.yamlParser())
+                TravisNeo4jVersionParser(Fixtures.yamlParser()),
+                Fixtures.yamlParser()
         )
 
         val result = subject.getNeo4jVersions()
