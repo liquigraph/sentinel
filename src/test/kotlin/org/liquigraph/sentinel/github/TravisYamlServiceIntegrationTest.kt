@@ -11,7 +11,7 @@ import java.nio.charset.StandardCharsets
 import java.util.*
 import java.util.logging.LogManager
 
-class RawTravisYamlServiceIntegrationTest {
+class TravisYamlServiceIntegrationTest {
 
     init {
         LogManager.getLogManager().reset()

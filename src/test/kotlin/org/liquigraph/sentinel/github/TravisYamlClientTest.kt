@@ -13,7 +13,7 @@ import org.liquigraph.sentinel.effects.Failure
 import org.liquigraph.sentinel.effects.Success
 import java.util.logging.LogManager
 
-class RawTravisYamlClientTest {
+class TravisYamlClientTest {
 
     init {
         LogManager.getLogManager().reset();

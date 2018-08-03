@@ -64,3 +64,11 @@ class TravisNeo4jVersionParser(private val yaml: Yaml) {
     }
 
 }
+
+
+@Target(AnnotationTarget.CLASS)
+@Retention(AnnotationRetention.SOURCE)
+annotation class NoArgConstructor
+
+@NoArgConstructor data class RawTravisYaml(var env: RawTravisEnv)
+@NoArgConstructor data class RawTravisEnv(var matrix: List<String>)
