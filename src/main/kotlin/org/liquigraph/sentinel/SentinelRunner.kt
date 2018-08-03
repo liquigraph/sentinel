@@ -1,62 +1,70 @@
 package org.liquigraph.sentinel
 
+import kotlinx.coroutines.experimental.async
+import kotlinx.coroutines.experimental.awaitAll
+import kotlinx.coroutines.experimental.runBlocking
 import org.liquigraph.sentinel.dockerstore.DockerStoreService
-import org.liquigraph.sentinel.github.TravisYamlService
-import org.liquigraph.sentinel.mavencentral.MavenCentralService
-import org.liquigraph.sentinel.effects.Failure
-import org.liquigraph.sentinel.effects.Success
 import org.liquigraph.sentinel.github.LiquigraphService
+import org.liquigraph.sentinel.github.SemanticVersion
+import org.liquigraph.sentinel.github.TravisNeo4jVersionParser
+import org.liquigraph.sentinel.github.TravisYamlService
+import org.liquigraph.sentinel.mavencentral.MavenArtifact
+import org.liquigraph.sentinel.mavencentral.MavenCentralService
 import org.springframework.boot.CommandLineRunner
 import org.springframework.stereotype.Component
 
 @Component
 class SentinelRunner(private val travisYamlService: TravisYamlService,
+                     private val travisYamlParser: TravisNeo4jVersionParser,
                      private val mavenCentralService: MavenCentralService,
                      private val liquigraphService: LiquigraphService,
-                     private val dockerStoreService: DockerStoreService): CommandLineRunner {
+                     private val dockerStoreService: DockerStoreService) : CommandLineRunner {
 
-    override fun run(vararg args: String?) {
-        val testedNeo4jVersions = travisYamlService.getNeo4jVersions()
-        when (testedNeo4jVersions) {
-            is Success -> {
-                println("#### Fetched from Github")
-                println(testedNeo4jVersions.content.joinLines())
-                val mavenCentralNeo4jVersions = mavenCentralService.getNeo4jArtifacts()
-                when (mavenCentralNeo4jVersions) {
-                    is Success -> {
-                        println("#### Fetched from Maven Central (showing first 10 elements for brevity)")
-                        val mavenCentralVersions = mavenCentralNeo4jVersions.content
-                        println(mavenCentralVersions.take(10).joinLines())
-                        val dockerizedNeo4jVersions = dockerStoreService.fetchDockerizedNeo4jVersions()
-                        when (dockerizedNeo4jVersions) {
-                            is Success -> {
-                                println("#### Fetched from Docker Store (showing first 10 elements for brevity)")
-                                val dockerizedVersions = dockerizedNeo4jVersions.content
-                                println(dockerizedVersions.take(10).joinLines())
-                                println("#### Changing versions")
-                                val versionChanges = liquigraphService.computeChanges(
-                                        testedNeo4jVersions.content,
-                                        mavenCentralVersions,
-                                        dockerizedVersions
-                                )
-                                println(versionChanges.joinLines())
-                            }
-                            is Failure -> {
-                                System.err.println("Failed to fetch from Docker Store")
-                                System.err.println(dockerizedNeo4jVersions)
-                            }
-                        }
-                    }
-                    is Failure -> {
-                        System.err.println("Failed to fetch from Maven Central")
-                        System.err.println(mavenCentralNeo4jVersions)
-                    }
-                }
-            }
-            else -> {
-                System.err.println("Failed to fetch from Github")
-                System.err.println(testedNeo4jVersions)
-            }
+    @Suppress("UNCHECKED_CAST")
+    override fun run(vararg args: String) {
+        runBlocking {
+            val results = awaitAll(
+                    readFromGithub(),
+                    readFromMavenCentral(),
+                    readFromDockerStore()
+            )
+            val rawTravisYaml = results[0] as String
+            val mavenVersions = results[1] as List<MavenArtifact>
+            val dockerVersions = results[2] as Set<SemanticVersion>
+            val githubVersions = travisYamlParser.parse(rawTravisYaml).getOrThrow()
+
+            val versionChanges = liquigraphService.computeChanges(
+                    githubVersions,
+                    mavenVersions,
+                    dockerVersions
+            )
+
+            val updatedYaml = travisYamlService.update(rawTravisYaml, versionChanges)
+
+            println("#### Github (showing max 10)")
+            println(githubVersions.take(10).joinLines())
+            println("#### Maven Central (showing max 10)")
+            println(mavenVersions.take(10).joinLines())
+            println("#### Docker Store (showing max 10)")
+            println(dockerVersions.take(10).joinLines())
+            println("#### Changes")
+            println(versionChanges.joinLines())
+            println("#### Resulting Yaml")
+            println(updatedYaml.getOrThrow())
+
         }
+
+    }
+
+    suspend fun readFromGithub() = async {
+        travisYamlService.fetchTravisYaml().getOrThrow()
+    }
+
+    suspend fun readFromMavenCentral() = async {
+        mavenCentralService.getNeo4jArtifacts().getOrThrow()
+    }
+
+    suspend fun readFromDockerStore() = async {
+        dockerStoreService.fetchDockerizedNeo4jVersions().getOrThrow()
     }
 }

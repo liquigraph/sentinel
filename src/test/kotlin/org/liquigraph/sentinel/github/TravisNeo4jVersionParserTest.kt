@@ -4,7 +4,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.liquigraph.sentinel.effects.Failure
 import org.liquigraph.sentinel.effects.Success
-import org.liquigraph.sentinel.getContentOrThrow
 import org.yaml.snakeyaml.Yaml
 
 class TravisNeo4jVersionParserTest {
@@ -22,7 +21,7 @@ class TravisNeo4jVersionParserTest {
             |      WITH_DOCKER=false
         """.trimMargin()) as Success<List<TravisNeo4jVersion>>
 
-        assertThat(versions.getContentOrThrow())
+        assertThat(versions.getOrThrow())
                 .containsOnlyOnce(
                         TravisNeo4jVersion("1.2.3", inDockerStore = true),
                         TravisNeo4jVersion("2.2.2", inDockerStore = false))
@@ -36,7 +35,7 @@ class TravisNeo4jVersionParserTest {
             |    - NEO_VERSION=1.2.3
         """.trimMargin()) as Success<List<TravisNeo4jVersion>>
 
-        assertThat(versions.getContentOrThrow()).containsOnlyOnce(TravisNeo4jVersion("1.2.3", inDockerStore = false))
+        assertThat(versions.getOrThrow()).containsOnlyOnce(TravisNeo4jVersion("1.2.3", inDockerStore = false))
     }
 
     @Test
