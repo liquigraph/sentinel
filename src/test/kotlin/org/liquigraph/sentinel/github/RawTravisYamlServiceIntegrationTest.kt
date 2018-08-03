@@ -7,9 +7,8 @@ import okhttp3.mockwebserver.MockWebServer
 import org.assertj.core.api.Assertions
 import org.junit.Test
 import org.liquigraph.sentinel.Fixtures
-import org.liquigraph.sentinel.getContentOrThrow
 import java.nio.charset.StandardCharsets
-import java.util.Base64
+import java.util.*
 import java.util.logging.LogManager
 
 class RawTravisYamlServiceIntegrationTest {
@@ -20,24 +19,7 @@ class RawTravisYamlServiceIntegrationTest {
 
     @Test
     fun `retrieves the content of a file`() {
-        val travisYmlBase64 = Base64.getEncoder().encodeToString("""
-            |sudo: required
-            |language: java
-            |services:
-            |  - docker
-            |jdk:
-            |  - oraclejdk8
-            |os:
-            |  - linux
-            |env:
-            |  matrix:
-            |    - NEO_VERSION=3.0.11
-            |      WITH_DOCKER=true
-            |      EXTRA_PROFILES=-Pwith-neo4j-io
-            |    - NEO_VERSION=3.1.7
-            |      WITH_DOCKER=false
-            |      EXTRA_PROFILES=-Pwith-neo4j-io
-        """.trimMargin().toByteArray(StandardCharsets.UTF_8))
+        val travisYmlBase64 = Base64.getEncoder().encodeToString(Fixtures.travisYml.toByteArray(StandardCharsets.UTF_8))
 
         val mockWebServer = MockWebServer()
         mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody("""
@@ -67,15 +49,13 @@ class RawTravisYamlServiceIntegrationTest {
                         Gson(),
                         OkHttpClient(),
                         "http://localhost:${mockWebServer.port}"),
-                TravisNeo4jVersionParser(Fixtures.yamlParser())
+                TravisNeo4jVersionParser(Fixtures.yamlParser()),
+                Fixtures.yamlParser()
         )
 
-        val result = subject.getNeo4jVersions()
+        val result = subject.fetchTravisYaml()
 
-        Assertions.assertThat(result.getContentOrThrow()).containsExactly(
-                TravisNeo4jVersion("3.0.11", true),
-                TravisNeo4jVersion("3.1.7", false)
-        )
+        Assertions.assertThat(result.getOrThrow()).isEqualTo(Fixtures.travisYml)
     }
 
 }

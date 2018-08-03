@@ -8,6 +8,7 @@ import org.liquigraph.sentinel.github.SemanticVersionAdapter
 import org.springframework.boot.SpringApplication
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.context.annotation.Bean
+import org.yaml.snakeyaml.DumperOptions
 import org.yaml.snakeyaml.Yaml
 import org.yaml.snakeyaml.representer.Representer
 
@@ -17,9 +18,11 @@ class SentinelApplication {
 
     @Bean
     fun yamlParser(): Yaml {
+        val options = DumperOptions()
+        options.defaultFlowStyle = DumperOptions.FlowStyle.BLOCK
         val representer = Representer()
         representer.propertyUtils.isSkipMissingProperties = true
-        return Yaml(representer)
+        return Yaml(representer, options)
     }
 
     @Bean

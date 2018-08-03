@@ -9,10 +9,17 @@ sealed class VersionChange {
 
 data class Update(val old: SemanticVersion, val new: SemanticVersion, val dockerized: Boolean) : VersionChange() {
     override fun newVersion() = new
+
+    override fun toString(): String {
+        return "$old -> $new | $dockerized"
+    }
 }
 
 data class Addition(val new: SemanticVersion, val dockerized: Boolean) : VersionChange() {
     override fun newVersion() = new
+    override fun toString(): String {
+        return "$new | $dockerized"
+    }
 }
 
 private data class VersionBranch(val major: Int, val minor: Int) {

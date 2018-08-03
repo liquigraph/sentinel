@@ -16,4 +16,8 @@ data class MavenArtifact(
         var packaging: String,
         @SerializedName("ec")
         var classifiers: List<String>
-)
+) {
+        override fun toString(): String {
+                return "$groupId:$artifactId:$version:$packaging (${classifiers.joinToString()})"
+        }
+}
