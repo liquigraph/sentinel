@@ -3,8 +3,12 @@ package org.liquigraph.sentinel.github
 import org.liquigraph.sentinel.mavencentral.MavenArtifact
 import org.springframework.stereotype.Service
 
-sealed class VersionChange {
+sealed class VersionChange : Comparable<VersionChange>{
     abstract fun newVersion(): SemanticVersion
+
+    override fun compareTo(other: VersionChange): Int {
+        return newVersion().compareTo(other.newVersion())
+    }
 }
 
 data class Update(val old: SemanticVersion, val new: SemanticVersion, val dockerized: Boolean) : VersionChange() {
@@ -52,7 +56,7 @@ class LiquigraphService {
                         else ->
                             newBranchAdditions(it.value, dockerizedVersions)
                     }
-                }
+                }.sorted()
     }
 
     private fun existingBranchChanges(newVersions: List<SemanticVersion>,
@@ -103,8 +107,8 @@ class LiquigraphService {
             listOf(Update(existing.version, new, dockerized = newIsDockerized))
         } else {
             val addition = Addition(new, dockerized = false)
-            val secondHighestNew = newVersions.lastOrNull { it > new && dockerizedVersions.contains(it) }
-            if (secondHighestNew != null) {
+            val secondHighestNew = newVersions.lastOrNull { existing.version < it && it < new && dockerizedVersions.contains(it) }
+            if (secondHighestNew != null ) {
                 listOf(addition, Update(existing.version, secondHighestNew, dockerized = true))
             } else {
                 listOf(addition)

@@ -49,7 +49,7 @@ class LiquigraphServiceTest {
     }
 
     @Test
-    fun  `excludes versions out of Travis version range`() {
+    fun `excludes versions out of Travis version range`() {
         val mavenArtifacts = listOf(
                 MavenArtifact("org.neo4j", "neo4j", "1.2.3".toVersion(), "jar", listOf(".jar")),
                 MavenArtifact("org.neo4j", "neo4j", "1.2.4".toVersion(), "jar", listOf(".jar")),
@@ -79,7 +79,7 @@ class LiquigraphServiceTest {
     }
 
     @Test
-    fun  `excludes Travis minimum version upgrade`() {
+    fun `excludes Travis minimum version upgrade`() {
         val mavenArtifacts = listOf(
                 MavenArtifact("org.neo4j", "neo4j", "2.0.0".toVersion(), "jar", listOf(".jar")),
                 MavenArtifact("org.neo4j", "neo4j", "2.0.9".toVersion(), "jar", listOf(".jar"))
@@ -98,7 +98,7 @@ class LiquigraphServiceTest {
     }
 
     @Test
-    fun  `creates an addition if only the Travis minimum version is present`() {
+    fun `creates an addition if only the Travis minimum version is present`() {
         val mavenArtifacts = listOf(
                 MavenArtifact("org.neo4j", "neo4j", "2.0.0".toVersion(), "jar", listOf(".jar")),
                 MavenArtifact("org.neo4j", "neo4j", "2.0.9".toVersion(), "jar", listOf(".jar"))
@@ -182,9 +182,10 @@ class LiquigraphServiceTest {
     }
 
     @Test
-    fun `Dockerizes minimum Travis version`() {val mavenArtifacts = listOf(
-            MavenArtifact("org.neo4j", "neo4j", "1.2.3".toVersion(), "jar", listOf(".jar"))
-    )
+    fun `Dockerizes minimum Travis version`() {
+        val mavenArtifacts = listOf(
+                MavenArtifact("org.neo4j", "neo4j", "1.2.3".toVersion(), "jar", listOf(".jar"))
+        )
         val travisYmlVersions = listOf(
                 TravisNeo4jVersion("1.2.3".toVersion(), inDockerStore = false)
         )
@@ -196,19 +197,44 @@ class LiquigraphServiceTest {
     }
 
     @Test
-    fun `appends newest non-Dockerized version after latest Dockerized one`() {val mavenArtifacts = listOf(
-            MavenArtifact("org.neo4j", "neo4j", "1.2.3".toVersion(), "jar", listOf(".jar")),
-            MavenArtifact("org.neo4j", "neo4j", "1.2.4".toVersion(), "jar", listOf(".jar")),
-            MavenArtifact("org.neo4j", "neo4j", "1.2.5".toVersion(), "jar", listOf(".jar"))
-    )
+    fun `appends newest non-Dockerized version after latest Dockerized one`() {
         val travisYmlVersions = listOf(
-                TravisNeo4jVersion("1.2.3".toVersion(), inDockerStore = false),
-                TravisNeo4jVersion("1.2.4".toVersion(), inDockerStore = true)
+                TravisNeo4jVersion("1.0.0".toVersion(), inDockerStore = false), // absolute minimum
+                TravisNeo4jVersion("1.0.4".toVersion(), inDockerStore = true)
         )
-        val dockerizedVersions = setOf("1.2.4".toVersion())
+        val mavenArtifacts = listOf(
+                MavenArtifact("org.neo4j", "neo4j", "1.0.0".toVersion(), "jar", listOf(".jar")),
+                MavenArtifact("org.neo4j", "neo4j", "1.0.4".toVersion(), "jar", listOf(".jar")),
+                MavenArtifact("org.neo4j", "neo4j", "1.0.5".toVersion(), "jar", listOf(".jar"))
+        )
+        val dockerizedVersions = setOf("1.0.4".toVersion())
 
         val result = liquigraphService.computeChanges(travisYmlVersions, mavenArtifacts, dockerizedVersions)
 
-        assertThat(result).containsExactly(Addition("1.2.5".toVersion(), dockerized = false))
+        assertThat(result).containsExactly(Addition("1.0.5".toVersion(), dockerized = false))
     }
+
+    @Test
+    fun `should update to the latest dockerized for minor version`() {
+
+        val mavenArtifacts = listOf(
+                MavenArtifact("org.neo4j", "neo4j", "3.0.0".toVersion(), "jar", listOf(".jar")),
+                MavenArtifact("org.neo4j", "neo4j", "3.3.6".toVersion(), "jar", listOf(".jar")),
+                MavenArtifact("org.neo4j", "neo4j", "3.3.7".toVersion(), "jar", listOf(".jar")),
+                MavenArtifact("org.neo4j", "neo4j", "3.3.8".toVersion(), "jar", listOf(".jar"))
+        )
+        val travisYmlVersions = listOf(
+                TravisNeo4jVersion("3.0.0".toVersion(), inDockerStore = true),
+                TravisNeo4jVersion("3.3.6".toVersion(), inDockerStore = true)
+        )
+
+        val dockerizedVersions = setOf("3.0.0".toVersion(), "3.3.6".toVersion(), "3.3.7".toVersion())
+
+        val result = liquigraphService.computeChanges(travisYmlVersions, mavenArtifacts, dockerizedVersions)
+
+        assertThat(result).containsExactly(Update("3.3.6".toVersion(), "3.3.7".toVersion(), true),
+                Addition("3.3.8".toVersion(), dockerized = false))
+    }
+
+
 }
