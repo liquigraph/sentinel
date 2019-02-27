@@ -6,14 +6,14 @@ import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.After
-import org.junit.Before
-import org.junit.Test
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
 import org.liquigraph.sentinel.Fixtures
-import org.liquigraph.sentinel.effects.Failure
-import org.liquigraph.sentinel.effects.Success
 import org.liquigraph.sentinel.SemanticVersion
 import org.liquigraph.sentinel.SemanticVersionAdapter
+import org.liquigraph.sentinel.effects.Failure
+import org.liquigraph.sentinel.effects.Success
 import org.liquigraph.sentinel.toVersion
 import java.util.logging.LogManager
 
@@ -26,14 +26,14 @@ class DockerStoreServiceTest {
         LogManager.getLogManager().reset()
     }
 
-    @Before
+    @BeforeEach
     fun prepare() {
         mockWebServer = MockWebServer()
         mockWebServer.start()
         service = DockerStoreService(OkHttpClient(), gson(), "http://localhost:${mockWebServer.port}")
     }
 
-    @After
+    @AfterEach
     fun tearDown() {
         mockWebServer.shutdown()
     }

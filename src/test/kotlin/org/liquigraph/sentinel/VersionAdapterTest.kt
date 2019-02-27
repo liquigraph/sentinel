@@ -3,7 +3,7 @@ package org.liquigraph.sentinel
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.Test
+import org.junit.jupiter.api.Test
 import org.liquigraph.sentinel.mavencentral.MavenArtifact
 import org.liquigraph.sentinel.mavencentral.MavenCentralResponse
 import org.liquigraph.sentinel.mavencentral.MavenCentralResult

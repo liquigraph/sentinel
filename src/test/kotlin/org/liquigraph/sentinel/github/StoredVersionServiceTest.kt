@@ -3,8 +3,8 @@ package org.liquigraph.sentinel.github
 import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.whenever
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.Before
-import org.junit.Test
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
 import org.liquigraph.sentinel.Addition
 import org.liquigraph.sentinel.Fixtures
 import org.liquigraph.sentinel.Update
@@ -21,7 +21,7 @@ class StoredVersionServiceTest {
     private lateinit var liquigraphService: StoredVersionService
     private lateinit var yamlParser: Yaml
 
-    @Before
+    @BeforeEach
     fun `set up`() {
         val options = DumperOptions()
         options.defaultFlowStyle = DumperOptions.FlowStyle.BLOCK

@@ -1,7 +1,7 @@
 package org.liquigraph.sentinel
 
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.Test
+import org.junit.jupiter.api.Test
 import org.liquigraph.sentinel.github.StoredVersion
 import org.liquigraph.sentinel.mavencentral.MavenArtifact
 

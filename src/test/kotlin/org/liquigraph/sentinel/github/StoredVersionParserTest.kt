@@ -1,7 +1,7 @@
 package org.liquigraph.sentinel.github
 
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.Test
+import org.junit.jupiter.api.Test
 import org.liquigraph.sentinel.effects.Failure
 import org.liquigraph.sentinel.effects.Success
 import org.yaml.snakeyaml.Yaml

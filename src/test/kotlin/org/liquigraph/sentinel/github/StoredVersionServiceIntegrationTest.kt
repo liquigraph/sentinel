@@ -5,7 +5,7 @@ import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.assertj.core.api.Assertions
-import org.junit.Test
+import org.junit.jupiter.api.Test
 import org.liquigraph.sentinel.Fixtures
 import java.nio.charset.StandardCharsets
 import java.util.*

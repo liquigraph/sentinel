@@ -6,7 +6,7 @@ import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.Test
+import org.junit.jupiter.api.Test
 import org.liquigraph.sentinel.Fixtures
 import org.liquigraph.sentinel.effects.Failure
 import org.liquigraph.sentinel.effects.Success

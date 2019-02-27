@@ -5,9 +5,9 @@ import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.After
-import org.junit.Before
-import org.junit.Test
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
 import org.liquigraph.sentinel.Fixtures
 import org.liquigraph.sentinel.effects.Failure
 import org.liquigraph.sentinel.effects.Success
@@ -23,14 +23,14 @@ class StoredBuildClientTest {
 
     lateinit var client: StoredBuildClient
 
-    @Before
+    @BeforeEach
     fun setUp() {
         mockWebServer = MockWebServer()
         mockWebServer.start()
         client = StoredBuildClient(Gson(), OkHttpClient(), "http://localhost:${mockWebServer.port}")
     }
 
-    @After
+    @AfterEach
     fun tearDown() {
         mockWebServer.close()
     }
