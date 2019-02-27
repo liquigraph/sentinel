@@ -7,7 +7,7 @@ import okhttp3.Request
 import okhttp3.Response
 import okhttp3.ResponseBody
 import org.liquigraph.sentinel.effects.Failure
-import org.liquigraph.sentinel.effects.Result
+import org.liquigraph.sentinel.effects.Computation
 import org.liquigraph.sentinel.effects.Success
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
@@ -19,7 +19,7 @@ class StoredBuildClient(val gson: Gson,
                         val httpClient: OkHttpClient,
                         @Value("\${githubApi.baseUri}") val baseUri: String) {
 
-    fun fetchBuildDefinition(): Result<String> {
+    fun fetchBuildDefinition(): Computation<String> {
         val response = fetchFile("${baseUri}/repos/liquigraph/liquigraph/contents/.travis.yml")
         return try {
             decodeContent(response)
@@ -36,7 +36,7 @@ class StoredBuildClient(val gson: Gson,
                 .execute()
     }
 
-    private fun decodeContent(response: Response): Result<String> {
+    private fun decodeContent(response: Response): Computation<String> {
         return if (!response.isSuccessful) {
             handleGithubErrors(response)
         } else {

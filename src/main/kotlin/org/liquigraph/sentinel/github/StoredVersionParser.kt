@@ -1,7 +1,7 @@
 package org.liquigraph.sentinel.github
 
 import org.liquigraph.sentinel.effects.Failure
-import org.liquigraph.sentinel.effects.Result
+import org.liquigraph.sentinel.effects.Computation
 import org.liquigraph.sentinel.effects.Success
 import org.springframework.stereotype.Component
 import org.yaml.snakeyaml.Yaml
@@ -10,13 +10,13 @@ import org.yaml.snakeyaml.error.YAMLException
 @Component
 class StoredVersionParser(private val yaml: Yaml) {
 
-    fun parse(body: String): Result<List<StoredVersion>> {
+    fun parse(body: String): Computation<List<StoredVersion>> {
         return parseBody(body)
                 .map { it.env.matrix }
                 .flatMap { extractVersions(it) }
     }
 
-    private fun parseBody(body: String): Result<TravisBuildDefinition> {
+    private fun parseBody(body: String): Computation<TravisBuildDefinition> {
         return try {
             Success(yaml.loadAs(body, TravisBuildDefinition::class.java))
         } catch (e: YAMLException) {
@@ -24,8 +24,8 @@ class StoredVersionParser(private val yaml: Yaml) {
         }
     }
 
-    private fun extractVersions(matrix: List<String>): Result<List<StoredVersion>> {
-        val versions: List<Result<StoredVersion>> = matrix.mapIndexed { index, row -> parseRow(index, row) }
+    private fun extractVersions(matrix: List<String>): Computation<List<StoredVersion>> {
+        val versions: List<Computation<StoredVersion>> = matrix.mapIndexed { index, row -> parseRow(index, row) }
         val (failures, successes) = partition(versions)
 
         return if (failures.isNotEmpty()) {
@@ -36,7 +36,7 @@ class StoredVersionParser(private val yaml: Yaml) {
         }
     }
 
-    private fun <T> partition(input: List<Result<T>>) =
+    private fun <T> partition(input: List<Computation<T>>) =
             input.fold(Pair(emptyList<Failure<T>>(), emptyList<Success<T>>())) { (failures, successes), element ->
                 when (element) {
                     is Failure -> Pair(failures + element, successes)
@@ -44,7 +44,7 @@ class StoredVersionParser(private val yaml: Yaml) {
                 }
             }
 
-    private fun parseRow(index: Int, row: String): Result<StoredVersion> {
+    private fun parseRow(index: Int, row: String): Computation<StoredVersion> {
         val pairs = row.split(" ")
                 .map {
                     val regex = Regex("([a-zA-Z_]*)=(.*)")

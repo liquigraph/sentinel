@@ -53,7 +53,7 @@ class StoredVersionServiceIntegrationTest {
                 Fixtures.yamlParser()
         )
 
-        val result = subject.fetchTravisYaml()
+        val result = subject.getBuildDefinition()
 
         Assertions.assertThat(result.getOrThrow()).isEqualTo(Fixtures.travisYml)
     }

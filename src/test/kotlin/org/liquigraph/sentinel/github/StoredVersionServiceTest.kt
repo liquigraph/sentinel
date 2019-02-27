@@ -10,7 +10,7 @@ import org.liquigraph.sentinel.Fixtures
 import org.liquigraph.sentinel.Update
 import org.liquigraph.sentinel.effects.Success
 import org.liquigraph.sentinel.toVersion
-import org.mockito.Matchers.anyString
+import org.mockito.ArgumentMatchers.anyString
 import org.yaml.snakeyaml.DumperOptions
 import org.yaml.snakeyaml.Yaml
 
@@ -36,6 +36,7 @@ class StoredVersionServiceTest {
     }
 
     @Test
+    @Suppress("UNCHECKED_CAST")
     fun `update yaml with new version addition`() {
         val yaml = Fixtures.travisYml
         val content = yamlParser.load<MutableMap<String, Any>>(yaml)
@@ -57,6 +58,7 @@ class StoredVersionServiceTest {
     }
 
     @Test
+    @Suppress("UNCHECKED_CAST")
     fun `updated versions should preserve order of additions`() {
         val newNonDockerizedVersion = listOf(Addition("3.0.12".toVersion(), false))
 
@@ -72,6 +74,7 @@ class StoredVersionServiceTest {
     }
 
     @Test
+    @Suppress("UNCHECKED_CAST")
     fun `should apply updates in order`() {
         val newVersions = listOf(
                 Addition("3.2.8".toVersion(), false),

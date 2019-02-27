@@ -5,9 +5,10 @@ import com.google.gson.JsonSyntaxException
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.liquigraph.sentinel.effects.Failure
-import org.liquigraph.sentinel.effects.Result
+import org.liquigraph.sentinel.effects.Computation
 import org.liquigraph.sentinel.effects.Success
 import org.liquigraph.sentinel.SemanticVersion
+import org.liquigraph.sentinel.WatchedCoordinates
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 
@@ -16,8 +17,8 @@ class DockerStoreService(private val httpClient: OkHttpClient,
                          private val gson: Gson,
                          @Value("\${dockerStore.baseUri}") private val baseUri: String) {
 
-    fun fetchDockerizedNeo4jVersions(): Result<Set<SemanticVersion>> {
-        val responseBody = responseBody("$baseUri/api/content/v1/products/images/neo4j")
+    fun getVersions(dockerDefinition: WatchedCoordinates.DockerCoordinates): Computation<Set<SemanticVersion>> {
+        val responseBody = responseBody("$baseUri/api/content/v1/products/images/${dockerDefinition.image}")
 
         return when (responseBody) {
             is Failure -> Failure(responseBody.code, responseBody.message)
@@ -25,7 +26,7 @@ class DockerStoreService(private val httpClient: OkHttpClient,
         }
     }
 
-    private fun extractImageVersions(responseBody: Success<String>): Result<Set<SemanticVersion>> {
+    private fun extractImageVersions(responseBody: Success<String>): Computation<Set<SemanticVersion>> {
         return try {
             Success(extract(responseBody.content))
         } catch (e: JsonSyntaxException) {
@@ -35,12 +36,12 @@ class DockerStoreService(private val httpClient: OkHttpClient,
 
     private fun extract(responseBody: String): Set<SemanticVersion> {
         val result = gson.fromJson(responseBody, DockerVersion::class.java)
-        return SemanticVersion.extractAll(result.fullDescription, { v -> !v.contains('-') })
+        return SemanticVersion.extractAll(result.fullDescription) { v -> !v.contains('-') }
                 .distinct()
                 .toSet()
     }
 
-    private fun responseBody(uri: String): Result<String> {
+    private fun responseBody(uri: String): Computation<String> {
         val response = httpClient.newCall(Request.Builder()
                 .url(uri)
                 .build())

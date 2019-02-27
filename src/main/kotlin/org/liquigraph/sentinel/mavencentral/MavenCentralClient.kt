@@ -5,7 +5,7 @@ import com.google.gson.JsonSyntaxException
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.liquigraph.sentinel.effects.Failure
-import org.liquigraph.sentinel.effects.Result
+import org.liquigraph.sentinel.effects.Computation
 import org.liquigraph.sentinel.effects.Success
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
@@ -15,7 +15,7 @@ class MavenCentralClient(private val httpClient: OkHttpClient,
                          private val gson: Gson,
                          @Value("\${mavenSearch.baseUri}") private val baseUri: String) {
 
-    fun fetchMavenCentralResults(): Result<List<MavenArtifact>> {
+    fun fetchMavenCentralResults(): Computation<List<MavenArtifact>> {
         val responseBody = responseBody()
 
         return when (responseBody) {
@@ -24,7 +24,7 @@ class MavenCentralClient(private val httpClient: OkHttpClient,
         }
     }
 
-    private fun extractDocs(responseBody: Success<String>): Result<List<MavenArtifact>> {
+    private fun extractDocs(responseBody: Success<String>): Computation<List<MavenArtifact>> {
         return try {
             val result = gson.fromJson(responseBody.content, MavenCentralResult::class.java)
             val response = result.response
@@ -44,7 +44,7 @@ class MavenCentralClient(private val httpClient: OkHttpClient,
         }
     }
 
-    private fun responseBody(): Result<String> {
+    private fun responseBody(): Computation<String> {
         val response = httpClient.newCall(Request.Builder()
                 .url("$baseUri/solrsearch/select?q=g%3A\"org.neo4j\"%20AND%20a%3A\"neo4j\"&core=gav&wt=json&rows=400")
                 .build())

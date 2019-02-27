@@ -4,7 +4,7 @@ import org.liquigraph.sentinel.Addition
 import org.liquigraph.sentinel.Update
 import org.liquigraph.sentinel.VersionChange
 import org.liquigraph.sentinel.effects.Failure
-import org.liquigraph.sentinel.effects.Result
+import org.liquigraph.sentinel.effects.Computation
 import org.liquigraph.sentinel.effects.Success
 import org.springframework.stereotype.Service
 import org.yaml.snakeyaml.Yaml
@@ -16,7 +16,7 @@ class StoredVersionService(private val storedBuildClient: StoredBuildClient,
                            private val yamlParser: Yaml) {
 
     fun update(rawBuildDefinition: String,
-               versionChanges: List<VersionChange>): Result<String> {
+               versionChanges: List<VersionChange>): Computation<String> {
 
         val initialVersions = neo4jVersionParser.parse(rawBuildDefinition)
         return when (initialVersions) {
@@ -44,6 +44,7 @@ class StoredVersionService(private val storedBuildClient: StoredBuildClient,
                 .toList()
     }
 
+    @Suppress("UNCHECKED_CAST")
     private fun updateVersionMatrix(rawTravisYaml: String, completeVersions: List<StoredVersion>): Map<String, Any>? {
         val content = yamlParser.load<Map<String, Any>>(rawTravisYaml)
         val initialMatrix = (content["env"] as Map<String, MutableList<String>>)["matrix"]!!
@@ -69,7 +70,7 @@ class StoredVersionService(private val storedBuildClient: StoredBuildClient,
         return updatedVersions
     }
 
-    fun fetchTravisYaml(): Result<String> {
+    fun getBuildDefinition(): Computation<String> {
         return storedBuildClient.fetchBuildDefinition()
     }
 }

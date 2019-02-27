@@ -9,18 +9,16 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.liquigraph.sentinel.Fixtures
-import org.liquigraph.sentinel.SemanticVersion
-import org.liquigraph.sentinel.SemanticVersionAdapter
+import org.liquigraph.sentinel.*
 import org.liquigraph.sentinel.effects.Failure
 import org.liquigraph.sentinel.effects.Success
-import org.liquigraph.sentinel.toVersion
 import java.util.logging.LogManager
 
 class DockerStoreServiceTest {
 
     private lateinit var mockWebServer: MockWebServer
     private lateinit var service: DockerStoreService
+    private val watchedArtifact = dockerDefinition("neo4j")
 
     init {
         LogManager.getLogManager().reset()
@@ -42,7 +40,7 @@ class DockerStoreServiceTest {
     fun `retrieves the Docker images from Docker Store`() {
         mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody(Fixtures.dockerStubResponse))
 
-        val result = service.fetchDockerizedNeo4jVersions()
+        val result = service.getVersions(watchedArtifact)
 
         assertThat(result)
                 .isEqualTo(Success(setOf(
@@ -58,7 +56,7 @@ class DockerStoreServiceTest {
     "documentation_url": "https://developer.github.com/v3"
 }""".trimIndent()))
 
-        val error = service.fetchDockerizedNeo4jVersions()
+        val error = service.getVersions(watchedArtifact)
 
         assertThat(error).isEqualTo(Failure<String>(404, "4xx error"))
     }
@@ -67,7 +65,7 @@ class DockerStoreServiceTest {
     fun `propagates a 500 error`() {
         mockWebServer.enqueue(MockResponse().setResponseCode(500))
 
-        val error = service.fetchDockerizedNeo4jVersions()
+        val error = service.getVersions(watchedArtifact)
 
         assertThat(error).isEqualTo(Failure<String>(500, "Unreachable http://localhost:${mockWebServer.port}"))
     }
@@ -76,7 +74,7 @@ class DockerStoreServiceTest {
     fun `propagates a weird error`() {
         mockWebServer.enqueue(MockResponse().setResponseCode(666))
 
-        val error = service.fetchDockerizedNeo4jVersions()
+        val error = service.getVersions(watchedArtifact)
 
         assertThat(error).isEqualTo(Failure<String>(666, "Unexpected error"))
     }
@@ -85,7 +83,7 @@ class DockerStoreServiceTest {
     fun `returns invalid JSON error`() {
         mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody("loliloljson"))
 
-        val result = service.fetchDockerizedNeo4jVersions() as Failure
+        val result = service.getVersions(watchedArtifact) as Failure
 
         assertThat(result.code).isEqualTo(3001)
         assertThat(result.message).containsIgnoringCase("Expected BEGIN_OBJECT but was STRING")
@@ -95,6 +93,12 @@ class DockerStoreServiceTest {
         return GsonBuilder()
                 .registerTypeAdapter(SemanticVersion::class.java, SemanticVersionAdapter())
                 .create()
+    }
+
+    private fun dockerDefinition(imageName: String): WatchedCoordinates.DockerCoordinates {
+        val result = WatchedCoordinates.DockerCoordinates()
+        result.image = imageName
+        return result
     }
 
 }
