@@ -7,4 +7,6 @@ class WatchedGithubRepository {
     lateinit var organization: String
     lateinit var repository: String
     lateinit var branch: String
+    lateinit var username: String
+    lateinit var authToken: String
 }

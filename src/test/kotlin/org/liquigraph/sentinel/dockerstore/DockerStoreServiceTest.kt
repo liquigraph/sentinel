@@ -10,7 +10,7 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.liquigraph.sentinel.*
-import org.liquigraph.sentinel.configuration.WatchedCoordinates
+import org.liquigraph.sentinel.configuration.WatchedArtifact
 import org.liquigraph.sentinel.effects.Failure
 import org.liquigraph.sentinel.effects.Success
 import java.util.logging.LogManager
@@ -96,8 +96,8 @@ class DockerStoreServiceTest {
                 .create()
     }
 
-    private fun dockerDefinition(imageName: String): WatchedCoordinates.DockerCoordinates {
-        val result = WatchedCoordinates.DockerCoordinates()
+    private fun dockerDefinition(imageName: String): WatchedArtifact.DockerCoordinates {
+        val result = WatchedArtifact.DockerCoordinates()
         result.image = imageName
         return result
     }

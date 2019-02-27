@@ -7,6 +7,7 @@ import okhttp3.mockwebserver.MockWebServer
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
 import org.liquigraph.sentinel.Fixtures
+import org.liquigraph.sentinel.configuration.BotPullRequestSettings
 import org.liquigraph.sentinel.configuration.WatchedGithubRepository
 import java.nio.charset.StandardCharsets
 import java.util.*
@@ -52,6 +53,7 @@ class StoredVersionServiceIntegrationTest {
                         githubRepository("liquigraph", "liquigraph", "master"),
                         "http://localhost:${mockWebServer.port}"),
                 StoredVersionParser(Fixtures.yamlParser()),
+                BotPullRequestSettings(),
                 Fixtures.yamlParser()
         )
 

@@ -8,7 +8,7 @@ import org.liquigraph.sentinel.effects.Failure
 import org.liquigraph.sentinel.effects.Computation
 import org.liquigraph.sentinel.effects.Success
 import org.liquigraph.sentinel.SemanticVersion
-import org.liquigraph.sentinel.configuration.WatchedCoordinates
+import org.liquigraph.sentinel.configuration.WatchedArtifact
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 
@@ -17,7 +17,7 @@ class DockerStoreService(private val httpClient: OkHttpClient,
                          private val gson: Gson,
                          @Value("\${dockerStore.baseUri}") private val baseUri: String) {
 
-    fun getVersions(dockerDefinition: WatchedCoordinates.DockerCoordinates): Computation<Set<SemanticVersion>> {
+    fun getVersions(dockerDefinition: WatchedArtifact.DockerCoordinates): Computation<Set<SemanticVersion>> {
         val responseBody = responseBody("$baseUri/api/content/v1/products/images/${dockerDefinition.image}")
 
         return when (responseBody) {

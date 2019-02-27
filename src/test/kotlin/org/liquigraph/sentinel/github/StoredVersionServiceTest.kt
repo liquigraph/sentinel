@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test
 import org.liquigraph.sentinel.Addition
 import org.liquigraph.sentinel.Fixtures
 import org.liquigraph.sentinel.Update
+import org.liquigraph.sentinel.configuration.BotPullRequestSettings
 import org.liquigraph.sentinel.effects.Success
 import org.liquigraph.sentinel.toVersion
 import org.mockito.ArgumentMatchers.anyString
@@ -26,7 +27,7 @@ class StoredVersionServiceTest {
         val options = DumperOptions()
         options.defaultFlowStyle = DumperOptions.FlowStyle.BLOCK
         yamlParser = Yaml(options)
-        liquigraphService = StoredVersionService(travisYamlClient, neo4jVersionParser, yamlParser)
+        liquigraphService = StoredVersionService(travisYamlClient, neo4jVersionParser, BotPullRequestSettings(), yamlParser)
 
         whenever(neo4jVersionParser.parse(anyString()))
                 .thenReturn(Success(listOf(StoredVersion("3.0.11".toVersion(), true), StoredVersion("3.1.7".toVersion()))))
@@ -41,7 +42,7 @@ class StoredVersionServiceTest {
         val yaml = Fixtures.travisYml
         val content = yamlParser.load<MutableMap<String, Any>>(yaml)
 
-        val result = liquigraphService.update(
+        val result = liquigraphService.applyChanges(
                 Fixtures.travisYml,
                 listOf(Addition("4.0.0".toVersion(), true),
                         Addition("5.0.0".toVersion(), false)))
@@ -62,7 +63,7 @@ class StoredVersionServiceTest {
     fun `updated versions should preserve order of additions`() {
         val newNonDockerizedVersion = listOf(Addition("3.0.12".toVersion(), false))
 
-        val result = liquigraphService.update(Fixtures.travisYml, newNonDockerizedVersion)
+        val result = liquigraphService.applyChanges(Fixtures.travisYml, newNonDockerizedVersion)
 
         val updatedContent = yamlParser.load<MutableMap<String, Any>>(result.getOrThrow())
         val matrixAfterUpdate = (updatedContent["env"] as Map<String, List<String>>)["matrix"]
@@ -80,7 +81,7 @@ class StoredVersionServiceTest {
                 Addition("3.2.8".toVersion(), false),
                 Update("3.1.7".toVersion(), "3.1.9".toVersion(), true))
 
-        val result = liquigraphService.update(Fixtures.travisYml, newVersions)
+        val result = liquigraphService.applyChanges(Fixtures.travisYml, newVersions)
 
         val updatedContent = yamlParser.load<MutableMap<String, Any>>(result.getOrThrow())
         val matrixAfterUpdate = (updatedContent["env"] as Map<String, List<String>>)["matrix"]

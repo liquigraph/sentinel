@@ -1,7 +1,9 @@
 package org.liquigraph.sentinel.effects
 
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
+import java.lang.IllegalStateException
 
 class ComputationTest {
 
@@ -42,22 +44,21 @@ class ComputationTest {
     }
 
     @Test
-    fun `consumes successes`() {
+    fun `iterates on successes`() {
         val list = mutableListOf<String>()
         val success = Success("string")
 
-        success.consume { list.add(it) }
+        success.forEach { list.add(it) }
 
         assertThat(list).containsExactly("string")
     }
 
     @Test
-    fun `does not consume failures`() {
-        val list = listOf<String>()
+    fun `throws when iterating on failures`() {
         val success = Failure<String>(2002, "nope nope")
 
-        success.consume { throw RuntimeException("noop") }
-
-        assertThat(list).isEmpty()
+        assertThatThrownBy {  success.forEach {  /* noop*/ } }
+                .isInstanceOf(IllegalStateException::class.java)
+                .hasMessage("Computation failed with message nope nope and code 2002")
     }
 }

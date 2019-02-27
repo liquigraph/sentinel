@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test
 import org.liquigraph.sentinel.effects.Failure
 import org.liquigraph.sentinel.effects.Success
 import org.liquigraph.sentinel.SemanticVersion
-import org.liquigraph.sentinel.configuration.WatchedCoordinates
+import org.liquigraph.sentinel.configuration.WatchedArtifact
 import org.liquigraph.sentinel.toVersion
 
 class MavenCentralServiceTest {
@@ -59,8 +59,8 @@ class MavenCentralServiceTest {
         assertThat(result).isEqualTo(Failure<List<String>>(404, "Not Found"))
     }
 
-    private fun mavenDefinition(groupId: String, artifactId: String, packaging: String, classifier: String): WatchedCoordinates.MavenCoordinates {
-        val result = WatchedCoordinates.MavenCoordinates()
+    private fun mavenDefinition(groupId: String, artifactId: String, packaging: String, classifier: String): WatchedArtifact.MavenCoordinates {
+        val result = WatchedArtifact.MavenCoordinates()
         result.groupId = groupId
         result.artifactId = artifactId
         result.packaging = packaging
