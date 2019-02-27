@@ -9,7 +9,10 @@
     <packaging>jar</packaging>
 
     <name>sentinel</name>
-    <description>Demo project for Spring Boot</description>
+    <description>
+        Sentinel watches Docker Store and Maven Central changes for the configured dependency and updates
+        the configured repository's Travis CI build matrix parameters.
+    </description>
 
     <parent>
         <groupId>org.springframework.boot</groupId>
