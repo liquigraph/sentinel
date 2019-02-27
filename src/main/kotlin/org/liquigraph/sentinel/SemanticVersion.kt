@@ -1,6 +1,4 @@
-package org.liquigraph.sentinel.github
-
-import org.liquigraph.sentinel.padAndZip
+package org.liquigraph.sentinel
 
 data class SemanticVersion(val major: Int,
                            val minor: Int,

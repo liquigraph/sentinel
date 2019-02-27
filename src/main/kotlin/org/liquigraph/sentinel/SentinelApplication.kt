@@ -3,8 +3,6 @@ package org.liquigraph.sentinel
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import okhttp3.OkHttpClient
-import org.liquigraph.sentinel.github.SemanticVersion
-import org.liquigraph.sentinel.github.SemanticVersionAdapter
 import org.springframework.boot.SpringApplication
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.context.annotation.Bean

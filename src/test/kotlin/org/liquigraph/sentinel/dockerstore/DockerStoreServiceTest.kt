@@ -12,8 +12,8 @@ import org.junit.Test
 import org.liquigraph.sentinel.Fixtures
 import org.liquigraph.sentinel.effects.Failure
 import org.liquigraph.sentinel.effects.Success
-import org.liquigraph.sentinel.github.SemanticVersion
-import org.liquigraph.sentinel.github.SemanticVersionAdapter
+import org.liquigraph.sentinel.SemanticVersion
+import org.liquigraph.sentinel.SemanticVersionAdapter
 import org.liquigraph.sentinel.toVersion
 import java.util.logging.LogManager
 

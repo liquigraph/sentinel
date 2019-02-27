@@ -1,4 +1,4 @@
-package org.liquigraph.sentinel.github
+package org.liquigraph.sentinel
 
 import com.google.gson.TypeAdapter
 import com.google.gson.stream.JsonReader

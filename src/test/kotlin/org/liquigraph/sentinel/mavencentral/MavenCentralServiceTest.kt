@@ -6,7 +6,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.liquigraph.sentinel.effects.Failure
 import org.liquigraph.sentinel.effects.Success
-import org.liquigraph.sentinel.github.SemanticVersion
+import org.liquigraph.sentinel.SemanticVersion
 import org.liquigraph.sentinel.toVersion
 
 class MavenCentralServiceTest {

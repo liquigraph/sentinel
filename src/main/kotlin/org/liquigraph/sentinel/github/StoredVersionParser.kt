@@ -8,28 +8,24 @@ import org.yaml.snakeyaml.Yaml
 import org.yaml.snakeyaml.error.YAMLException
 
 @Component
-class TravisNeo4jVersionParser(private val yaml: Yaml) {
+class StoredVersionParser(private val yaml: Yaml) {
 
-    fun parse(body: String): Result<List<TravisNeo4jVersion>> {
+    fun parse(body: String): Result<List<StoredVersion>> {
         return parseBody(body)
-                .map { readBuildMatrix(it) }
+                .map { it.env.matrix }
                 .flatMap { extractVersions(it) }
     }
 
-    private fun parseBody(body: String): Result<RawTravisYaml> {
+    private fun parseBody(body: String): Result<TravisBuildDefinition> {
         return try {
-            Success(yaml.loadAs(body, RawTravisYaml::class.java))
+            Success(yaml.loadAs(body, TravisBuildDefinition::class.java))
         } catch (e: YAMLException) {
             Failure(1000, e.message ?: "Invalid YAML")
         }
     }
 
-    private fun readBuildMatrix(buildFile: RawTravisYaml): List<String> {
-        return buildFile.env.matrix
-    }
-
-    private fun extractVersions(matrix: List<String>): Result<List<TravisNeo4jVersion>> {
-        val versions: List<Result<TravisNeo4jVersion>> = matrix.mapIndexed { index, row -> parseRow(index, row) }
+    private fun extractVersions(matrix: List<String>): Result<List<StoredVersion>> {
+        val versions: List<Result<StoredVersion>> = matrix.mapIndexed { index, row -> parseRow(index, row) }
         val (failures, successes) = partition(versions)
 
         return if (failures.isNotEmpty()) {
@@ -48,7 +44,7 @@ class TravisNeo4jVersionParser(private val yaml: Yaml) {
                 }
             }
 
-    private fun parseRow(index: Int, row: String): Result<TravisNeo4jVersion> {
+    private fun parseRow(index: Int, row: String): Result<StoredVersion> {
         val pairs = row.split(" ")
                 .map {
                     val regex = Regex("([a-zA-Z_]*)=(.*)")
@@ -60,7 +56,7 @@ class TravisNeo4jVersionParser(private val yaml: Yaml) {
                 ?: return Failure(1002, "Missing 'NEO_VERSION' field at index $index")
 
         val withDocker = pairs.firstOrNull { it.first == "WITH_DOCKER" }
-        return Success(TravisNeo4jVersion(neoVersion.second, withDocker?.second?.toBoolean() ?: false))
+        return Success(StoredVersion(neoVersion.second, withDocker?.second?.toBoolean() ?: false))
     }
 
 }
@@ -70,5 +66,8 @@ class TravisNeo4jVersionParser(private val yaml: Yaml) {
 @Retention(AnnotationRetention.SOURCE)
 annotation class NoArgConstructor
 
-@NoArgConstructor data class RawTravisYaml(var env: RawTravisEnv)
-@NoArgConstructor data class RawTravisEnv(var matrix: List<String>)
+@NoArgConstructor
+data class TravisBuildDefinition(var env: TravisEnvironment)
+
+@NoArgConstructor
+data class TravisEnvironment(var matrix: List<String>)

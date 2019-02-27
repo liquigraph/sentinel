@@ -15,11 +15,11 @@ import java.nio.charset.StandardCharsets
 import java.util.*
 
 @Service
-class TravisYamlClient(val gson: Gson,
-                       val httpClient: OkHttpClient,
-                       @Value("\${githubApi.baseUri}") val baseUri: String) {
+class StoredBuildClient(val gson: Gson,
+                        val httpClient: OkHttpClient,
+                        @Value("\${githubApi.baseUri}") val baseUri: String) {
 
-    fun fetchTravisYaml(): Result<String> {
+    fun fetchBuildDefinition(): Result<String> {
         val response = fetchFile("${baseUri}/repos/liquigraph/liquigraph/contents/.travis.yml")
         return try {
             decodeContent(response)

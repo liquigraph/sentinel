@@ -1,4 +1,4 @@
-package org.liquigraph.sentinel.github
+package org.liquigraph.sentinel
 
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
@@ -7,7 +7,6 @@ import org.junit.Test
 import org.liquigraph.sentinel.mavencentral.MavenArtifact
 import org.liquigraph.sentinel.mavencentral.MavenCentralResponse
 import org.liquigraph.sentinel.mavencentral.MavenCentralResult
-import org.liquigraph.sentinel.toVersion
 
 class SemanticVersionAdapterTest {
 

@@ -1,4 +1,4 @@
-package org.liquigraph.sentinel.github
+package org.liquigraph.sentinel
 
 import org.junit.Test
 import org.junit.runner.RunWith

@@ -1,7 +1,8 @@
-package org.liquigraph.sentinel.github
+package org.liquigraph.sentinel
 
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
+import org.liquigraph.sentinel.SemanticVersion
 
 class SemanticVersionTest {
 
@@ -46,6 +47,6 @@ class SemanticVersionTest {
     @Test
     fun `extract versions`() {
         val versions = SemanticVersion.extractAll("test 3.2.1, test 3.4.5")
-        assertThat(versions).containsExactly(SemanticVersion(3,2,1, listOf()), SemanticVersion(3,4,5, listOf()))
+        assertThat(versions).containsExactly(SemanticVersion(3, 2, 1, listOf()), SemanticVersion(3, 4, 5, listOf()))
     }
 }

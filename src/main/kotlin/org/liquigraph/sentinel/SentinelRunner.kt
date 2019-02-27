@@ -4,20 +4,18 @@ import kotlinx.coroutines.experimental.async
 import kotlinx.coroutines.experimental.awaitAll
 import kotlinx.coroutines.experimental.runBlocking
 import org.liquigraph.sentinel.dockerstore.DockerStoreService
-import org.liquigraph.sentinel.github.LiquigraphService
-import org.liquigraph.sentinel.github.SemanticVersion
-import org.liquigraph.sentinel.github.TravisNeo4jVersionParser
-import org.liquigraph.sentinel.github.TravisYamlService
+import org.liquigraph.sentinel.github.StoredVersionParser
+import org.liquigraph.sentinel.github.StoredVersionService
 import org.liquigraph.sentinel.mavencentral.MavenArtifact
 import org.liquigraph.sentinel.mavencentral.MavenCentralService
 import org.springframework.boot.CommandLineRunner
 import org.springframework.stereotype.Component
 
 @Component
-class SentinelRunner(private val travisYamlService: TravisYamlService,
-                     private val travisYamlParser: TravisNeo4jVersionParser,
+class SentinelRunner(private val storedVersionService: StoredVersionService,
+                     private val travisYamlParser: StoredVersionParser,
                      private val mavenCentralService: MavenCentralService,
-                     private val liquigraphService: LiquigraphService,
+                     private val updateService: UpdateService,
                      private val dockerStoreService: DockerStoreService) : CommandLineRunner {
 
     @Suppress("UNCHECKED_CAST")
@@ -33,13 +31,13 @@ class SentinelRunner(private val travisYamlService: TravisYamlService,
             val dockerVersions = results[2] as Set<SemanticVersion>
             val githubVersions = travisYamlParser.parse(rawTravisYaml).getOrThrow()
 
-            val versionChanges = liquigraphService.computeChanges(
+            val versionChanges = updateService.computeVersionChanges(
                     githubVersions,
                     mavenVersions,
                     dockerVersions
             )
 
-            val updatedYaml = travisYamlService.update(rawTravisYaml, versionChanges)
+            val updatedYaml = storedVersionService.update(rawTravisYaml, versionChanges)
 
             println("#### Github (showing max 10)")
             println(githubVersions.take(10).joinLines())
@@ -57,7 +55,7 @@ class SentinelRunner(private val travisYamlService: TravisYamlService,
     }
 
     suspend fun readFromGithub() = async {
-        travisYamlService.fetchTravisYaml().getOrThrow()
+        storedVersionService.fetchTravisYaml().getOrThrow()
     }
 
     suspend fun readFromMavenCentral() = async {

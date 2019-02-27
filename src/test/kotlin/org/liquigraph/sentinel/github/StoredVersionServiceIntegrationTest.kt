@@ -11,7 +11,7 @@ import java.nio.charset.StandardCharsets
 import java.util.*
 import java.util.logging.LogManager
 
-class TravisYamlServiceIntegrationTest {
+class StoredVersionServiceIntegrationTest {
 
     init {
         LogManager.getLogManager().reset()
@@ -44,12 +44,12 @@ class TravisYamlServiceIntegrationTest {
             """.trimIndent()))
         mockWebServer.start()
 
-        val subject = TravisYamlService(
-                TravisYamlClient(
+        val subject = StoredVersionService(
+                StoredBuildClient(
                         Gson(),
                         OkHttpClient(),
                         "http://localhost:${mockWebServer.port}"),
-                TravisNeo4jVersionParser(Fixtures.yamlParser()),
+                StoredVersionParser(Fixtures.yamlParser()),
                 Fixtures.yamlParser()
         )
 

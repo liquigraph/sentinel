@@ -1,6 +1,8 @@
 package org.liquigraph.sentinel.github
 
-data class TravisNeo4jVersion(val version: SemanticVersion, val inDockerStore: Boolean = false) {
+import org.liquigraph.sentinel.SemanticVersion
+
+data class StoredVersion(val version: SemanticVersion, val inDockerStore: Boolean = false) {
     constructor(version: String, inDockerStore: Boolean) : this(SemanticVersion.parseEntire(version)!!, inDockerStore)
 
     override fun toString(): String {

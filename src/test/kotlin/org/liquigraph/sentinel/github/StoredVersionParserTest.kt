@@ -6,9 +6,9 @@ import org.liquigraph.sentinel.effects.Failure
 import org.liquigraph.sentinel.effects.Success
 import org.yaml.snakeyaml.Yaml
 
-class TravisNeo4jVersionParserTest {
+class StoredVersionParserTest {
 
-    private val parser = TravisNeo4jVersionParser(Yaml())
+    private val parser = StoredVersionParser(Yaml())
 
     @Test
     fun `parses versions`() {
@@ -19,12 +19,12 @@ class TravisNeo4jVersionParserTest {
             |      WITH_DOCKER=true
             |    - NEO_VERSION=2.2.2
             |      WITH_DOCKER=false
-        """.trimMargin()) as Success<List<TravisNeo4jVersion>>
+        """.trimMargin()) as Success<List<StoredVersion>>
 
         assertThat(versions.getOrThrow())
                 .containsOnlyOnce(
-                        TravisNeo4jVersion("1.2.3", inDockerStore = true),
-                        TravisNeo4jVersion("2.2.2", inDockerStore = false))
+                        StoredVersion("1.2.3", inDockerStore = true),
+                        StoredVersion("2.2.2", inDockerStore = false))
     }
 
     @Test
@@ -33,9 +33,9 @@ class TravisNeo4jVersionParserTest {
             |env:
             |  matrix:
             |    - NEO_VERSION=1.2.3
-        """.trimMargin()) as Success<List<TravisNeo4jVersion>>
+        """.trimMargin()) as Success<List<StoredVersion>>
 
-        assertThat(versions.getOrThrow()).containsOnlyOnce(TravisNeo4jVersion("1.2.3", inDockerStore = false))
+        assertThat(versions.getOrThrow()).containsOnlyOnce(StoredVersion("1.2.3", inDockerStore = false))
     }
 
     @Test

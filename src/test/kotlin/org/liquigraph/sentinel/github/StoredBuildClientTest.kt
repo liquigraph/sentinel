@@ -13,7 +13,7 @@ import org.liquigraph.sentinel.effects.Failure
 import org.liquigraph.sentinel.effects.Success
 import java.util.logging.LogManager
 
-class TravisYamlClientTest {
+class StoredBuildClientTest {
 
     init {
         LogManager.getLogManager().reset();
@@ -21,13 +21,13 @@ class TravisYamlClientTest {
 
     lateinit var mockWebServer: MockWebServer
 
-    lateinit var client: TravisYamlClient
+    lateinit var client: StoredBuildClient
 
     @Before
     fun setUp() {
         mockWebServer = MockWebServer()
         mockWebServer.start()
-        client = TravisYamlClient(Gson(), OkHttpClient(), "http://localhost:${mockWebServer.port}")
+        client = StoredBuildClient(Gson(), OkHttpClient(), "http://localhost:${mockWebServer.port}")
     }
 
     @After
@@ -39,7 +39,7 @@ class TravisYamlClientTest {
     fun `fetches Travis build file`() {
         mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody(Fixtures.githubFileApiResponse))
 
-        val yaml = client.fetchTravisYaml()
+        val yaml = client.fetchBuildDefinition()
 
         assertThat(yaml).isEqualTo(Success(Fixtures.travisYml))
     }
@@ -51,7 +51,7 @@ class TravisYamlClientTest {
     "documentation_url": "https://developer.github.com/v3"
 }""".trimIndent()))
 
-        val error = client.fetchTravisYaml()
+        val error = client.fetchBuildDefinition()
 
         assertThat(error).isEqualTo(Failure<String>(404, "Not Found"))
     }
@@ -60,7 +60,7 @@ class TravisYamlClientTest {
     fun `propagates a 500 error`() {
         mockWebServer.enqueue(MockResponse().setResponseCode(500))
 
-        val error = client.fetchTravisYaml()
+        val error = client.fetchBuildDefinition()
 
         assertThat(error).isEqualTo(Failure<String>(500, "Unreachable http://localhost:${mockWebServer.port}"))
     }
@@ -69,7 +69,7 @@ class TravisYamlClientTest {
     fun `propagates a weird error`() {
         mockWebServer.enqueue(MockResponse().setResponseCode(666))
 
-        val error = client.fetchTravisYaml()
+        val error = client.fetchBuildDefinition()
 
         assertThat(error).isEqualTo(Failure<String>(666, "Unexpected error"))
     }
@@ -78,7 +78,7 @@ class TravisYamlClientTest {
     fun `returns invalid JSON error`() {
         mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody("loliloljson"))
 
-        val result = client.fetchTravisYaml() as Failure
+        val result = client.fetchBuildDefinition() as Failure
 
         assertThat(result.code).isEqualTo(1001)
         assertThat(result.message).containsIgnoringCase("Expected BEGIN_OBJECT but was STRING")

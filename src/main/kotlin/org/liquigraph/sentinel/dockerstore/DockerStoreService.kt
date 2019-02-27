@@ -7,7 +7,7 @@ import okhttp3.Request
 import org.liquigraph.sentinel.effects.Failure
 import org.liquigraph.sentinel.effects.Result
 import org.liquigraph.sentinel.effects.Success
-import org.liquigraph.sentinel.github.SemanticVersion
+import org.liquigraph.sentinel.SemanticVersion
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 

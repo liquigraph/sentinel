@@ -5,18 +5,20 @@ import com.nhaarman.mockito_kotlin.whenever
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
+import org.liquigraph.sentinel.Addition
 import org.liquigraph.sentinel.Fixtures
+import org.liquigraph.sentinel.Update
 import org.liquigraph.sentinel.effects.Success
 import org.liquigraph.sentinel.toVersion
 import org.mockito.Matchers.anyString
 import org.yaml.snakeyaml.DumperOptions
 import org.yaml.snakeyaml.Yaml
 
-class TravisYamlServiceTest {
+class StoredVersionServiceTest {
 
-    private val travisYamlClient = mock<TravisYamlClient>()
-    private val neo4jVersionParser = mock<TravisNeo4jVersionParser>()
-    private lateinit var liquigraphService: TravisYamlService
+    private val travisYamlClient = mock<StoredBuildClient>()
+    private val neo4jVersionParser = mock<StoredVersionParser>()
+    private lateinit var liquigraphService: StoredVersionService
     private lateinit var yamlParser: Yaml
 
     @Before
@@ -24,12 +26,12 @@ class TravisYamlServiceTest {
         val options = DumperOptions()
         options.defaultFlowStyle = DumperOptions.FlowStyle.BLOCK
         yamlParser = Yaml(options)
-        liquigraphService = TravisYamlService(travisYamlClient, neo4jVersionParser, yamlParser)
+        liquigraphService = StoredVersionService(travisYamlClient, neo4jVersionParser, yamlParser)
 
         whenever(neo4jVersionParser.parse(anyString()))
-                .thenReturn(Success(listOf(TravisNeo4jVersion("3.0.11".toVersion(), true), TravisNeo4jVersion("3.1.7".toVersion()))))
+                .thenReturn(Success(listOf(StoredVersion("3.0.11".toVersion(), true), StoredVersion("3.1.7".toVersion()))))
 
-        whenever(travisYamlClient.fetchTravisYaml())
+        whenever(travisYamlClient.fetchBuildDefinition())
                 .thenReturn(Success(Fixtures.travisYml))
     }
 
