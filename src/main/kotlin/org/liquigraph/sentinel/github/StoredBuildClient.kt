@@ -6,6 +6,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import okhttp3.ResponseBody
+import org.liquigraph.sentinel.configuration.WatchedGithubRepository
 import org.liquigraph.sentinel.effects.Failure
 import org.liquigraph.sentinel.effects.Computation
 import org.liquigraph.sentinel.effects.Success
@@ -17,14 +18,15 @@ import java.util.*
 @Service
 class StoredBuildClient(val gson: Gson,
                         val httpClient: OkHttpClient,
+                        val repository: WatchedGithubRepository,
                         @Value("\${githubApi.baseUri}") val baseUri: String) {
 
     fun fetchBuildDefinition(): Computation<String> {
-        val response = fetchFile("${baseUri}/repos/liquigraph/liquigraph/contents/.travis.yml")
+        val uri = "$baseUri/repos/${repository.organization}/${repository.repository}/contents/.travis.yml?ref=${repository.branch}"
+        val response = fetchFile(uri)
         return try {
             decodeContent(response)
-        }
-        catch (e: JsonSyntaxException) {
+        } catch (e: JsonSyntaxException) {
             Failure(1001, e.message!!)
         }
     }

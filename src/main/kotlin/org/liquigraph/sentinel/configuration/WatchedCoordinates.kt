@@ -1,7 +1,6 @@
-package org.liquigraph.sentinel
+package org.liquigraph.sentinel.configuration
 
 import org.springframework.boot.context.properties.ConfigurationProperties
-import org.springframework.context.annotation.PropertySource
 
 @ConfigurationProperties("artifact")
 class WatchedCoordinates {

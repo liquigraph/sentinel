@@ -7,6 +7,7 @@ import okhttp3.mockwebserver.MockWebServer
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
 import org.liquigraph.sentinel.Fixtures
+import org.liquigraph.sentinel.configuration.WatchedGithubRepository
 import java.nio.charset.StandardCharsets
 import java.util.*
 import java.util.logging.LogManager
@@ -48,6 +49,7 @@ class StoredVersionServiceIntegrationTest {
                 StoredBuildClient(
                         Gson(),
                         OkHttpClient(),
+                        githubRepository("liquigraph", "liquigraph", "master"),
                         "http://localhost:${mockWebServer.port}"),
                 StoredVersionParser(Fixtures.yamlParser()),
                 Fixtures.yamlParser()
@@ -56,6 +58,14 @@ class StoredVersionServiceIntegrationTest {
         val result = subject.getBuildDefinition()
 
         Assertions.assertThat(result.getOrThrow()).isEqualTo(Fixtures.travisYml)
+    }
+
+    private fun githubRepository(org: String, repo: String, branch: String): WatchedGithubRepository {
+        val result = WatchedGithubRepository()
+        result.organization = org
+        result.repository = repo
+        result.branch = branch
+        return result
     }
 
 }

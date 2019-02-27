@@ -1,6 +1,6 @@
 package org.liquigraph.sentinel.mavencentral
 
-import org.liquigraph.sentinel.WatchedCoordinates
+import org.liquigraph.sentinel.configuration.WatchedCoordinates
 import org.liquigraph.sentinel.effects.Computation
 import org.springframework.stereotype.Service
 

@@ -1,5 +1,6 @@
 package org.liquigraph.sentinel
 
+import org.liquigraph.sentinel.configuration.WatchedCoordinates
 import org.liquigraph.sentinel.dockerstore.DockerStoreService
 import org.liquigraph.sentinel.effects.Computation
 import org.liquigraph.sentinel.github.StoredVersionParser

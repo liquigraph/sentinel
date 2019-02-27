@@ -9,6 +9,7 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.liquigraph.sentinel.Fixtures
+import org.liquigraph.sentinel.configuration.WatchedGithubRepository
 import org.liquigraph.sentinel.effects.Failure
 import org.liquigraph.sentinel.effects.Success
 import java.util.logging.LogManager
@@ -23,11 +24,13 @@ class StoredBuildClientTest {
 
     lateinit var client: StoredBuildClient
 
+    val repository = githubRepository("liquigraph", "liquigraph", "master")
+
     @BeforeEach
     fun setUp() {
         mockWebServer = MockWebServer()
         mockWebServer.start()
-        client = StoredBuildClient(Gson(), OkHttpClient(), "http://localhost:${mockWebServer.port}")
+        client = StoredBuildClient(Gson(), OkHttpClient(), repository, "http://localhost:${mockWebServer.port}")
     }
 
     @AfterEach
@@ -82,6 +85,14 @@ class StoredBuildClientTest {
 
         assertThat(result.code).isEqualTo(1001)
         assertThat(result.message).containsIgnoringCase("Expected BEGIN_OBJECT but was STRING")
+    }
+
+    private fun githubRepository(org: String, repo: String, branch: String): WatchedGithubRepository {
+        val result = WatchedGithubRepository()
+        result.organization = org
+        result.repository = repo
+        result.branch = branch
+        return result
     }
 }
 

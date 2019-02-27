@@ -10,6 +10,7 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.liquigraph.sentinel.*
+import org.liquigraph.sentinel.configuration.WatchedCoordinates
 import org.liquigraph.sentinel.effects.Failure
 import org.liquigraph.sentinel.effects.Success
 import java.util.logging.LogManager

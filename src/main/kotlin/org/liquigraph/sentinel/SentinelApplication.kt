@@ -3,18 +3,21 @@ package org.liquigraph.sentinel
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import okhttp3.OkHttpClient
+import org.liquigraph.sentinel.configuration.WatchedCoordinates
+import org.liquigraph.sentinel.configuration.WatchedGithubRepository
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.runApplication
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.PropertySource
+import org.springframework.context.annotation.PropertySources
 import org.yaml.snakeyaml.DumperOptions
 import org.yaml.snakeyaml.Yaml
 import org.yaml.snakeyaml.representer.Representer
 
 @SpringBootApplication
-@EnableConfigurationProperties(WatchedCoordinates::class)
-@PropertySource("classpath:watched-artifact.properties")
+@EnableConfigurationProperties(WatchedCoordinates::class, WatchedGithubRepository::class)
+@PropertySource("watched-artifact.properties", "watched-repository.properties")
 class SentinelApplication {
 
     @Bean

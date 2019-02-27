@@ -8,7 +8,7 @@ import org.liquigraph.sentinel.effects.Failure
 import org.liquigraph.sentinel.effects.Computation
 import org.liquigraph.sentinel.effects.Success
 import org.liquigraph.sentinel.SemanticVersion
-import org.liquigraph.sentinel.WatchedCoordinates
+import org.liquigraph.sentinel.configuration.WatchedCoordinates
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 
