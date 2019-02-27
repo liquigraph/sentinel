@@ -1,6 +1,6 @@
 package org.liquigraph.sentinel
 
-import org.liquigraph.sentinel.configuration.WatchedCoordinates
+import org.liquigraph.sentinel.configuration.WatchedArtifact
 import org.liquigraph.sentinel.dockerstore.DockerStoreService
 import org.liquigraph.sentinel.effects.Computation
 import org.liquigraph.sentinel.github.StoredVersionParser
@@ -16,33 +16,19 @@ class SentinelRunner(private val storedVersionService: StoredVersionService,
                      private val mavenCentralService: MavenCentralService,
                      private val updateService: UpdateService,
                      private val dockerStoreService: DockerStoreService,
-                     private val watchedCoordinates: WatchedCoordinates) : CommandLineRunner {
+                     private val watchedCoordinates: WatchedArtifact) : CommandLineRunner {
 
-    @Suppress("UNCHECKED_CAST")
     override fun run(vararg args: String) {
-        readFromGithub().consume { buildDefinition ->
-            readFromMavenCentral(watchedCoordinates.maven).consume { mavenVersions ->
-                readFromDockerStore(watchedCoordinates.docker).consume { dockerVersions ->
-                    storedVersionParser.parse(buildDefinition).consume { storedVersions ->
-
-                        val versionChanges = updateService.computeVersionChanges(
-                                storedVersions,
-                                mavenVersions,
-                                dockerVersions
-                        )
-
-                        val updatedBuildDefinition = storedVersionService.update(buildDefinition, versionChanges)
-
-                        println("#### Github (showing max 10)")
-                        println(storedVersions.take(10).joinLines())
-                        println("#### Maven Central (showing max 10)")
-                        println(mavenVersions.take(10).joinLines())
-                        println("#### Docker Store (showing max 10)")
-                        println(dockerVersions.take(10).joinLines())
-                        println("#### Changes")
-                        println(versionChanges.joinLines())
-                        println("#### Resulting Yaml")
-                        println(updatedBuildDefinition.getOrThrow())
+        readFromGithub().forEach { buildDefinition ->
+            readFromMavenCentral(watchedCoordinates.maven).forEach { mavenVersions ->
+                readFromDockerStore(watchedCoordinates.docker).forEach { dockerVersions ->
+                    storedVersionParser.parse(buildDefinition).forEach { storedVersions ->
+                        val versionChanges = updateService.computeVersionChanges(storedVersions, mavenVersions, dockerVersions)
+                        storedVersionService.applyChanges(buildDefinition, versionChanges)
+                                .flatMap { storedVersionService.postPullRequest(it) }
+                                .forEach {
+                                    println("New PR created: $it")
+                                }
                     }
                 }
             }
@@ -53,11 +39,11 @@ class SentinelRunner(private val storedVersionService: StoredVersionService,
         return storedVersionService.getBuildDefinition()
     }
 
-    fun readFromMavenCentral(mavenCoordinates: WatchedCoordinates.MavenCoordinates): Computation<List<MavenArtifact>> {
+    fun readFromMavenCentral(mavenCoordinates: WatchedArtifact.MavenCoordinates): Computation<List<MavenArtifact>> {
         return mavenCentralService.getArtifacts(mavenCoordinates)
     }
 
-    fun readFromDockerStore(dockerImage: WatchedCoordinates.DockerCoordinates): Computation<Set<SemanticVersion>> {
+    fun readFromDockerStore(dockerImage: WatchedArtifact.DockerCoordinates): Computation<Set<SemanticVersion>> {
         return dockerStoreService.getVersions(dockerImage)
     }
 

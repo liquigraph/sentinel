@@ -3,7 +3,7 @@ package org.liquigraph.sentinel.github
 import org.liquigraph.sentinel.Addition
 import org.liquigraph.sentinel.Update
 import org.liquigraph.sentinel.VersionChange
-import org.liquigraph.sentinel.effects.Failure
+import org.liquigraph.sentinel.configuration.BotPullRequestSettings
 import org.liquigraph.sentinel.effects.Computation
 import org.liquigraph.sentinel.effects.Success
 import org.springframework.stereotype.Service
@@ -13,20 +13,30 @@ import java.io.StringWriter
 @Service
 class StoredVersionService(private val storedBuildClient: StoredBuildClient,
                            private val neo4jVersionParser: StoredVersionParser,
+                           private val botPullRequestSettings: BotPullRequestSettings,
                            private val yamlParser: Yaml) {
 
-    fun update(rawBuildDefinition: String,
-               versionChanges: List<VersionChange>): Computation<String> {
+    fun applyChanges(initialBuildDefinition: String,
+                     versionChanges: List<VersionChange>): Computation<String> {
 
-        val initialVersions = neo4jVersionParser.parse(rawBuildDefinition)
-        return when (initialVersions) {
-            is Failure<List<StoredVersion>> -> Failure(4001, "Could not parse .travis.yml")
-            is Success<List<StoredVersion>> -> {
-                val updated = applyUpdates(versionChanges, initialVersions)
-                val completeVersions = applyAdditions(versionChanges, updated)
-                return serializeYaml(rawBuildDefinition, completeVersions)
-            }
+        return neo4jVersionParser.parse(initialBuildDefinition).flatMap {
+            val updated = applyUpdates(versionChanges, it)
+            val completeVersions = applyAdditions(versionChanges, updated)
+            serializeYaml(initialBuildDefinition, completeVersions)
         }
+    }
+
+    fun postPullRequest(buildDefinition: String): Computation<String> {
+        return storedBuildClient.postTravisYamlBlob(buildDefinition)
+                .flatMap { blob -> Pair(storedBuildClient.getMostRecentCommitHash(), blob).mapFirst() }
+                .flatMap { hashAndBlob ->
+                    val baseHash = hashAndBlob.first
+                    val treeHash = storedBuildClient.postNewTree(baseHash, hashAndBlob.second)
+                    Pair(treeHash, baseHash).mapFirst()
+                }
+                .flatMap { storedBuildClient.postNewCommit(it.first, it.second, botPullRequestSettings.message) }
+                .flatMap { storedBuildClient.postNewRef(botPullRequestSettings.branchName, it) }
+                .flatMap { storedBuildClient.postNewPullRequest(it, botPullRequestSettings) }
     }
 
     private fun serializeYaml(rawTravisYaml: String, completeVersions: List<StoredVersion>): Success<String> {
@@ -35,13 +45,6 @@ class StoredVersionService(private val storedBuildClient: StoredBuildClient,
             yamlParser.dump(content, it)
             return Success(it.toString())
         }
-    }
-
-    private fun serialize(completeVersions: List<StoredVersion>): List<String> {
-        return completeVersions
-                .sortedBy { it.version }
-                .map { "NEO_VERSION=${it.version} WITH_DOCKER=${it.inDockerStore}" }
-                .toList()
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -53,25 +56,39 @@ class StoredVersionService(private val storedBuildClient: StoredBuildClient,
         return content
     }
 
+    private fun serialize(completeVersions: List<StoredVersion>): List<String> {
+        return completeVersions
+                .sortedBy { it.version }
+                .map { "NEO_VERSION=${it.version} WITH_DOCKER=${it.inDockerStore}" }
+                .toList()
+    }
+
     private fun applyAdditions(versionChanges: List<VersionChange>, updatedVersions: List<StoredVersion>): List<StoredVersion> {
         return updatedVersions + versionChanges.filterIsInstance(Addition::class.java)
                 .map { StoredVersion(it.new, it.dockerized) }
     }
 
-    private fun applyUpdates(versionChanges: List<VersionChange>, initialVersions: Success<List<StoredVersion>>): List<StoredVersion> {
+    private fun applyUpdates(versionChanges: List<VersionChange>, initialVersions: List<StoredVersion>): List<StoredVersion> {
         val updates = versionChanges.filterIsInstance(Update::class.java)
-        val updatedVersions = initialVersions.content.map { version ->
+        return initialVersions.map { version ->
             val update = updates.firstOrNull { update -> version.version == update.old }
             if (update == null) version
             else {
                 StoredVersion(update.new, update.dockerized)
             }
         }
-        return updatedVersions
     }
 
     fun getBuildDefinition(): Computation<String> {
         return storedBuildClient.fetchBuildDefinition()
     }
+}
+
+fun <A, B> Pair<Computation<A>, B>.mapFirst(): Computation<Pair<A, B>> {
+    return this.first.map { Pair(it, this.second) }
+}
+
+fun <A, B> Pair<A, Computation<B>>.mapSecond(): Computation<Pair<A, B>> {
+    return this.second.map { Pair(this.first, it) }
 }
 
