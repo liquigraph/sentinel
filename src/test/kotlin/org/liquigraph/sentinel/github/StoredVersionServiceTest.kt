@@ -14,6 +14,7 @@ import org.liquigraph.sentinel.toVersion
 import org.mockito.ArgumentMatchers.anyString
 import org.yaml.snakeyaml.DumperOptions
 import org.yaml.snakeyaml.Yaml
+import reactor.core.publisher.Mono
 
 class StoredVersionServiceTest {
 
@@ -33,7 +34,7 @@ class StoredVersionServiceTest {
                 .thenReturn(Success(listOf(StoredVersion("3.0.11".toVersion(), true), StoredVersion("3.1.7".toVersion()))))
 
         whenever(travisYamlClient.fetchBuildDefinition())
-                .thenReturn(Success(Fixtures.travisYml))
+                .thenReturn(Mono.just(Result.success(Fixtures.travisYml)))
     }
 
     @Test

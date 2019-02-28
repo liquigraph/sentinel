@@ -1,141 +1,125 @@
 package org.liquigraph.sentinel.github
 
-import com.google.gson.Gson
-import com.google.gson.JsonSyntaxException
-import okhttp3.*
 import org.liquigraph.sentinel.configuration.BotPullRequestSettings
 import org.liquigraph.sentinel.configuration.WatchedGithubRepository
-import org.liquigraph.sentinel.effects.Failure
-import org.liquigraph.sentinel.effects.Computation
-import org.liquigraph.sentinel.effects.Success
+import org.liquigraph.sentinel.effects.CallError
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.http.HttpHeaders.ACCEPT
+import org.springframework.http.HttpHeaders.CONTENT_TYPE
+import org.springframework.http.MediaType.APPLICATION_JSON_UTF8
+import org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE
+import org.springframework.lang.NonNull
 import org.springframework.stereotype.Service
+import org.springframework.web.reactive.function.BodyInserters
+import org.springframework.web.reactive.function.client.ClientResponse
+import org.springframework.web.reactive.function.client.WebClient
+import reactor.core.publisher.Mono
 import java.nio.charset.StandardCharsets
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.*
 
 @Service
-class StoredBuildClient(val gson: Gson,
-                        val httpClient: OkHttpClient,
-                        final val repository: WatchedGithubRepository,
-                        @Value("\${githubApi.baseUri}") final val baseUri: String) {
+class StoredBuildClient(private final val repository: WatchedGithubRepository,
+                        @Value("\${githubApi.baseUri}") private final val baseUri: String) {
 
-    private val mediaType: MediaType = MediaType.parse("application/json;charset=utf-8")!!
-    private val baseRepositoryUrl = "$baseUri/repos/${repository.organization}/${repository.repository}"
+    private val webClient = WebClient.create("$baseUri/repos/${repository.organization}/${repository.repository}")
 
-    fun fetchBuildDefinition(): Computation<String> {
-        val response = get("$baseRepositoryUrl/contents/.travis.yml")
-        return mapResponse(response, this::extractYaml)
+    @NonNull
+    fun fetchBuildDefinition(): Mono<Result<String>> {
+        return get("/contents/.travis.yml")
+                .flatMap { errorOrMap(it, java.util.Map::class.java) }
+                .map { result ->
+                    result.map { decodeBase64(removeNewlines(it["content"]!! as String)) }
+                }
     }
 
-
-    fun postTravisYamlBlob(yaml: String): Computation<Pair<String, String>> {
+    @NonNull
+    fun postTravisYamlBlob(yaml: String): Mono<Pair<String, String>> {
         val blob = BlobInput(Base64.getEncoder().encodeToString(yaml.toByteArray(StandardCharsets.UTF_8)), "base64")
-        val response = post("$baseRepositoryUrl/git/blobs", mediaType, blob)
-        return mapResponse(response, this::extractBlobResponse).map {
-            Pair(yaml, it)
-        }
+        return postJson("/git/blobs", blob)
+                .flatMap { it.bodyToMono(BlobResponse::class.java) }
+                .map { Pair(yaml, it.sha) }
     }
 
-    fun getMostRecentCommitHash(): Computation<String> {
-        val response = get("$baseRepositoryUrl/git/refs/heads/${repository.branch}")
-        return mapResponse(response, this::extractRefSha)
+    @NonNull
+    fun getMostRecentCommitHash(): Mono<Result<String>> {
+        return get("/contents/.travis.yml")
+                .flatMap { errorOrMap(it, RefResponse::class.java) }
+                .map { result -> result.map { it.`object`.sha } }
     }
 
-    fun postNewTree(baseRef: String, contentSha: Pair<String, String>): Computation<String> {
+    @NonNull
+    fun postNewTree(baseRef: String, contentSha: Pair<String, String>): Mono<String> {
         val tree = Tree(baseRef, listOf(
                 RefTreeObject(".travis.yml", TreeMode.FILE.mode, "blob", contentSha.second)
         ))
-        val response = post("$baseRepositoryUrl/git/trees", mediaType, tree)
-        return mapResponse(response, this::extractTreeHash)
+        return postJson("/git/trees", tree)
+                .flatMap { it.bodyToMono(TreeResponse::class.java) }
+                .map { it.sha }
     }
 
-    fun postNewRef(refName: String, treeSha1: String): Computation<String> {
+    @NonNull
+    fun postNewRef(refName: String, treeSha1: String): Mono<String> {
         val ref = RefCreationInput("refs/heads/$refName", treeSha1)
-        val response = post("$baseRepositoryUrl/git/refs", mediaType, ref)
-        return mapResponse(response, this::extractRefName)
-
+        return postJson("/git/refs", ref)
+                .flatMap { it.bodyToMono(RefResponse::class.java) }
+                .map { it.ref }
     }
 
-    fun postNewPullRequest(ref: String, botPullRequestSettings: BotPullRequestSettings): Computation<String> {
+    @NonNull
+    fun postNewCommit(treeHash: String, baseHash: String, commitMessage: String): Mono<String> {
+        val commit = CommitCreationInput(commitMessage, treeHash, listOf(baseHash))
+        return postJson("/git/commits", commit)
+                .flatMap { it.bodyToMono(CommitResponse::class.java) }
+                .map { it.sha }
+    }
+
+    @NonNull
+    fun postNewPullRequest(ref: String, botPullRequestSettings: BotPullRequestSettings): Mono<String> {
         val currentDateTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
         val pullRequest = PullRequestCreationInput(
                 head = ref,
                 title = botPullRequestSettings.title.replace("##date##", currentDateTime),
                 body = botPullRequestSettings.message)
-        val response = post("$baseRepositoryUrl/pulls", mediaType, pullRequest)
-        return mapResponse(response, this::extractHtmlUrl)
+
+        return postJson("/pulls", pullRequest)
+                .flatMap { it.bodyToMono(PullRequestResponse::class.java) }
+                .map { it.html_url }
     }
 
-    fun postNewCommit(treeHash: String, baseHash: String, commitMessage: String): Computation<String> {
-        val jsonMedia = mediaType
-        val ref = CommitCreationInput(commitMessage, treeHash, listOf(baseHash))
-        val response = post("$baseRepositoryUrl/git/commits", jsonMedia, ref)
-        return mapResponse(response, this::extractCommitResponse)
+    private fun get(uri: String): Mono<ClientResponse> {
+        return webClient.get().uri(uri)
+                .header(ACCEPT, APPLICATION_JSON_UTF8_VALUE)
+                .exchange()
     }
 
-    private fun get(uri: String): Response {
-        return httpClient.newCall(builderAt(uri).build()).execute()
-    }
+    private fun <T> errorOrMap(response: ClientResponse, type: Class<T>): Mono<Result<T>> {
+        val statusCode = response.statusCode()
+        return when {
+            statusCode.is4xxClientError -> {
+                response.bodyToMono(Map::class.java)
+                        .map { it["message"] as String }
+                        .map { Result.failure<T>(CallError(statusCode.value(), it)) }
 
-    private fun <T> post(uri: String, mediaType: MediaType, content: T): Response {
-        val blob = gson.toJson(content)
-        val rawAuthorization = "${repository.username}:${repository.authToken}"
-        val requestBuilder = builderAt(uri).post(RequestBody.create(mediaType, blob))
-                .addHeader("Authorization", "Basic " + Base64.getEncoder().encodeToString(rawAuthorization.toByteArray()))
-                .build()
-        return httpClient.newCall(requestBuilder).execute()
-    }
-
-    private fun builderAt(uri: String) = Request.Builder().url(uri)
-
-    private fun <T> mapResponse(response: Response, fn: (Response) -> Computation<T>): Computation<T> {
-        return if (!response.isSuccessful) {
-            handleGithubErrors(response)
-        } else {
-            tryMap(fn, response)
-        }
-    }
-
-    private fun <T> tryMap(fn: (Response) -> Computation<T>, response: Response): Computation<T> {
-        return try {
-            fn(response)
-        } catch (e: JsonSyntaxException) {
-            Failure(1001, e.message!!)
-        }
-    }
-
-    private fun extractYaml(response: Response): Success<String> =
-            Success(decodeBase64(removeNewlines(gson.fromJson<Map<String, String>>(response.body()!!.charStream(), Map::class.java)["content"]!!)))
-
-    private fun extractBlobResponse(response: Response) =
-            Success(gson.fromJson(response.body()!!.charStream(), BlobResponse::class.java).sha)
-
-    private fun extractCommitResponse(response: Response) =
-            Success(gson.fromJson(response.body()!!.charStream(), CommitResponse::class.java).sha)
-
-    private fun extractRefSha(response: Response) =
-            Success(gson.fromJson(response.body()!!.charStream(), RefResponse::class.java).`object`.sha)
-
-    private fun extractTreeHash(response: Response) =
-    // TODO: assert that only .travis.yml is listed as file and its SHA-1 matches
-            Success(gson.fromJson(response.body()!!.charStream(), TreeResponse::class.java).sha)
-
-    private fun extractRefName(response: Response) =
-            Success(gson.fromJson(response.body()!!.charStream(), RefResponse::class.java).ref)
-
-    private fun extractHtmlUrl(response: Response) =
-            Success(gson.fromJson(response.body()!!.charStream(), PullRequestResponse::class.java).html_url)
-
-    private fun <T> handleGithubErrors(response: Response): Failure<T> {
-        return when (response.code()) {
-            in 400..499 -> Failure(response.code(), gson.fromJson<Map<String, String>>(response.body()!!.charStream(), Map::class.java)["message"]!!)
-            in 500..599 -> Failure(response.code(), "Unreachable $baseUri")
+            }
+            statusCode.is5xxServerError -> Mono.error(CallError(statusCode.value(), "Unreachable $baseUri"))
             else -> {
-                Failure(response.code(), "Unexpected error")
+                val result: Mono<Result<T>> = response.bodyToMono(type).map { Result.success(it) }
+                result
             }
         }
+    }
+
+
+    private fun <T> postJson(uri: String, content: T): Mono<ClientResponse> {
+        val rawAuthorization = "${repository.username}:${repository.authToken}"
+        return webClient.post().uri(uri)
+                .header("Authorization", "Basic " + Base64.getEncoder().encodeToString(rawAuthorization.toByteArray()))
+                .header(CONTENT_TYPE, APPLICATION_JSON_UTF8_VALUE)
+                .body(BodyInserters.fromObject(content))
+                .accept(APPLICATION_JSON_UTF8)
+                .exchange()
     }
 
     private fun removeNewlines(base64WithWeirdNewlines: String): String {

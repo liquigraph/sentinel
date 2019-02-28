@@ -48,8 +48,6 @@ class StoredVersionServiceIntegrationTest {
 
         val subject = StoredVersionService(
                 StoredBuildClient(
-                        Gson(),
-                        OkHttpClient(),
                         githubRepository("liquigraph", "liquigraph", "master"),
                         "http://localhost:${mockWebServer.port}"),
                 StoredVersionParser(Fixtures.yamlParser()),

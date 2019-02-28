@@ -5,6 +5,7 @@ import org.liquigraph.sentinel.Update
 import org.liquigraph.sentinel.VersionChange
 import org.liquigraph.sentinel.configuration.BotPullRequestSettings
 import org.liquigraph.sentinel.effects.Computation
+import org.liquigraph.sentinel.effects.Failure
 import org.liquigraph.sentinel.effects.Success
 import org.springframework.stereotype.Service
 import org.yaml.snakeyaml.Yaml
@@ -27,7 +28,7 @@ class StoredVersionService(private val storedBuildClient: StoredBuildClient,
     }
 
     fun postPullRequest(buildDefinition: String): Computation<String> {
-        return storedBuildClient.postTravisYamlBlob(buildDefinition)
+        return Failure(2002, "") /*storedBuildClient.postTravisYamlBlob(buildDefinition)
                 .flatMap { blob -> Pair(storedBuildClient.getMostRecentCommitHash(), blob).mapFirst() }
                 .flatMap { hashAndBlob ->
                     val baseHash = hashAndBlob.first
@@ -36,7 +37,7 @@ class StoredVersionService(private val storedBuildClient: StoredBuildClient,
                 }
                 .flatMap { storedBuildClient.postNewCommit(it.first, it.second, botPullRequestSettings.message) }
                 .flatMap { storedBuildClient.postNewRef(botPullRequestSettings.branchName, it) }
-                .flatMap { storedBuildClient.postNewPullRequest(it, botPullRequestSettings) }
+                .flatMap { storedBuildClient.postNewPullRequest(it, botPullRequestSettings) }*/
     }
 
     private fun serializeYaml(rawTravisYaml: String, completeVersions: List<StoredVersion>): Success<String> {
@@ -80,7 +81,7 @@ class StoredVersionService(private val storedBuildClient: StoredBuildClient,
     }
 
     fun getBuildDefinition(): Computation<String> {
-        return storedBuildClient.fetchBuildDefinition()
+        return Failure(2002, "") //storedBuildClient.fetchBuildDefinition()
     }
 }
 

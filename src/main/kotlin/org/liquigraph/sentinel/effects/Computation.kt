@@ -30,3 +30,6 @@ data class Success<out T>(val content: T) : Computation<T>() {
         function(content)
     }
 }
+
+
+class CallError(code: Int, message: String) : Throwable("Call failed with message $message and code $code")
