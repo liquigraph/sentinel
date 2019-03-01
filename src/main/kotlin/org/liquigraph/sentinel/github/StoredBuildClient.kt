@@ -1,13 +1,15 @@
 package org.liquigraph.sentinel.github
 
 import com.google.gson.Gson
-import com.google.gson.JsonSyntaxException
-import okhttp3.*
+import com.google.gson.JsonParseException
+import okhttp3.MediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody
 import org.liquigraph.sentinel.configuration.BotPullRequestSettings
 import org.liquigraph.sentinel.configuration.WatchedGithubRepository
-import org.liquigraph.sentinel.effects.Failure
-import org.liquigraph.sentinel.effects.Computation
-import org.liquigraph.sentinel.effects.Success
+import org.liquigraph.sentinel.effects.flatMap
+import org.liquigraph.sentinel.effects.toResult
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import java.nio.charset.StandardCharsets
@@ -24,119 +26,98 @@ class StoredBuildClient(val gson: Gson,
     private val mediaType: MediaType = MediaType.parse("application/json;charset=utf-8")!!
     private val baseRepositoryUrl = "$baseUri/repos/${repository.organization}/${repository.repository}"
 
-    fun fetchBuildDefinition(): Computation<String> {
-        val response = get("$baseRepositoryUrl/contents/.travis.yml")
-        return mapResponse(response, this::extractYaml)
+    fun fetchBuildDefinition(): Result<String> {
+        return get("$baseRepositoryUrl/contents/.travis.yml").flatMap(jsonSafe(this::extractYaml))
     }
 
 
-    fun postTravisYamlBlob(yaml: String): Computation<Pair<String, String>> {
+    fun postTravisYamlBlob(yaml: String): Result<Pair<String, String>> {
         val blob = BlobInput(Base64.getEncoder().encodeToString(yaml.toByteArray(StandardCharsets.UTF_8)), "base64")
         val response = post("$baseRepositoryUrl/git/blobs", mediaType, blob)
-        return mapResponse(response, this::extractBlobResponse).map {
+        return response.flatMap(jsonSafe(this::extractBlobResponse)).map {
             Pair(yaml, it)
         }
     }
 
-    fun getMostRecentCommitHash(): Computation<String> {
-        val response = get("$baseRepositoryUrl/git/refs/heads/${repository.branch}")
-        return mapResponse(response, this::extractRefSha)
+    fun getMostRecentCommitHash(): Result<String> {
+        return get("$baseRepositoryUrl/git/refs/heads/${repository.branch}").flatMap(jsonSafe(this::extractRefSha))
     }
 
-    fun postNewTree(baseRef: String, contentSha: Pair<String, String>): Computation<String> {
+    fun postNewTree(baseRef: String, contentSha: Pair<String, String>): Result<String> {
         val tree = Tree(baseRef, listOf(
                 RefTreeObject(".travis.yml", TreeMode.FILE.mode, "blob", contentSha.second)
         ))
-        val response = post("$baseRepositoryUrl/git/trees", mediaType, tree)
-        return mapResponse(response, this::extractTreeHash)
+        return post("$baseRepositoryUrl/git/trees", mediaType, tree).flatMap(jsonSafe(this::extractTreeHash))
     }
 
-    fun postNewRef(refName: String, treeSha1: String): Computation<String> {
+    fun postNewRef(refName: String, treeSha1: String): Result<String> {
         val ref = RefCreationInput("refs/heads/$refName", treeSha1)
-        val response = post("$baseRepositoryUrl/git/refs", mediaType, ref)
-        return mapResponse(response, this::extractRefName)
+        return post("$baseRepositoryUrl/git/refs", mediaType, ref).flatMap(jsonSafe(this::extractRefName))
 
     }
 
-    fun postNewPullRequest(ref: String, botPullRequestSettings: BotPullRequestSettings): Computation<String> {
+    fun postNewPullRequest(ref: String, botPullRequestSettings: BotPullRequestSettings): Result<String> {
         val currentDateTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
         val pullRequest = PullRequestCreationInput(
                 head = ref,
                 title = botPullRequestSettings.title.replace("##date##", currentDateTime),
                 body = botPullRequestSettings.message)
         val response = post("$baseRepositoryUrl/pulls", mediaType, pullRequest)
-        return mapResponse(response, this::extractHtmlUrl)
+        return response.flatMap(jsonSafe(this::extractHtmlUrl))
     }
 
-    fun postNewCommit(treeHash: String, baseHash: String, commitMessage: String): Computation<String> {
+    fun postNewCommit(treeHash: String, baseHash: String, commitMessage: String): Result<String> {
         val jsonMedia = mediaType
-        val ref = CommitCreationInput(commitMessage, treeHash, listOf(baseHash))
-        val response = post("$baseRepositoryUrl/git/commits", jsonMedia, ref)
-        return mapResponse(response, this::extractCommitResponse)
+        val commit = CommitCreationInput(commitMessage, treeHash, listOf(baseHash))
+        return post("$baseRepositoryUrl/git/commits", jsonMedia, commit).flatMap(jsonSafe(this::extractCommitResponse))
     }
 
-    private fun get(uri: String): Response {
-        return httpClient.newCall(builderAt(uri).build()).execute()
+    private fun get(uri: String): Result<String> {
+        return httpClient.newCall(builderAt(uri).build()).execute().toResult()
     }
 
-    private fun <T> post(uri: String, mediaType: MediaType, content: T): Response {
+    private fun <T> post(uri: String, mediaType: MediaType, content: T): Result<String> {
         val blob = gson.toJson(content)
         val rawAuthorization = "${repository.username}:${repository.authToken}"
         val requestBuilder = builderAt(uri).post(RequestBody.create(mediaType, blob))
                 .addHeader("Authorization", "Basic " + Base64.getEncoder().encodeToString(rawAuthorization.toByteArray()))
                 .build()
-        return httpClient.newCall(requestBuilder).execute()
+        return httpClient.newCall(requestBuilder).execute().toResult()
     }
 
     private fun builderAt(uri: String) = Request.Builder().url(uri)
 
-    private fun <T> mapResponse(response: Response, fn: (Response) -> Computation<T>): Computation<T> {
-        return if (!response.isSuccessful) {
-            handleGithubErrors(response)
-        } else {
-            tryMap(fn, response)
-        }
-    }
-
-    private fun <T> tryMap(fn: (Response) -> Computation<T>, response: Response): Computation<T> {
-        return try {
-            fn(response)
-        } catch (e: JsonSyntaxException) {
-            Failure(1001, e.message!!)
-        }
-    }
-
-    private fun extractYaml(response: Response): Success<String> =
-            Success(decodeBase64(removeNewlines(gson.fromJson<Map<String, String>>(response.body()!!.charStream(), Map::class.java)["content"]!!)))
-
-    private fun extractBlobResponse(response: Response) =
-            Success(gson.fromJson(response.body()!!.charStream(), BlobResponse::class.java).sha)
-
-    private fun extractCommitResponse(response: Response) =
-            Success(gson.fromJson(response.body()!!.charStream(), CommitResponse::class.java).sha)
-
-    private fun extractRefSha(response: Response) =
-            Success(gson.fromJson(response.body()!!.charStream(), RefResponse::class.java).`object`.sha)
-
-    private fun extractTreeHash(response: Response) =
-    // TODO: assert that only .travis.yml is listed as file and its SHA-1 matches
-            Success(gson.fromJson(response.body()!!.charStream(), TreeResponse::class.java).sha)
-
-    private fun extractRefName(response: Response) =
-            Success(gson.fromJson(response.body()!!.charStream(), RefResponse::class.java).ref)
-
-    private fun extractHtmlUrl(response: Response) =
-            Success(gson.fromJson(response.body()!!.charStream(), PullRequestResponse::class.java).html_url)
-
-    private fun <T> handleGithubErrors(response: Response): Failure<T> {
-        return when (response.code()) {
-            in 400..499 -> Failure(response.code(), gson.fromJson<Map<String, String>>(response.body()!!.charStream(), Map::class.java)["message"]!!)
-            in 500..599 -> Failure(response.code(), "Unreachable $baseUri")
-            else -> {
-                Failure(response.code(), "Unexpected error")
+    private fun <T> jsonSafe(fn: (String) -> Result<T>): (String) -> Result<T> {
+        return {
+            try {
+                fn(it)
+            } catch (e: JsonParseException) {
+                Result.failure(e)
             }
         }
     }
+
+    private fun extractYaml(response: String) =
+            Result.success(decodeBase64(removeNewlines(gson.fromJson<Map<String, String>>(response, Map::class.java)["content"]!!)))
+
+    private fun extractBlobResponse(response: String) =
+            Result.success(gson.fromJson(response, BlobResponse::class.java).sha)
+
+    private fun extractCommitResponse(response: String) =
+            Result.success(gson.fromJson(response, CommitResponse::class.java).sha)
+
+    private fun extractRefSha(response: String) =
+            Result.success(gson.fromJson(response, RefResponse::class.java).`object`.sha)
+
+    private fun extractTreeHash(response: String) =
+    // TODO: assert that only .travis.yml is listed as file and its SHA-1 matches
+            Result.success(gson.fromJson(response, TreeResponse::class.java).sha)
+
+    private fun extractRefName(response: String) =
+            Result.success(gson.fromJson(response, RefResponse::class.java).ref)
+
+    private fun extractHtmlUrl(response: String) =
+            Result.success(gson.fromJson(response, PullRequestResponse::class.java).html_url)
 
     private fun removeNewlines(base64WithWeirdNewlines: String): String {
         return base64WithWeirdNewlines.replace("\n", "")

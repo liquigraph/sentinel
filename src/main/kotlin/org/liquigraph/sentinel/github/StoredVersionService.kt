@@ -4,8 +4,7 @@ import org.liquigraph.sentinel.Addition
 import org.liquigraph.sentinel.Update
 import org.liquigraph.sentinel.VersionChange
 import org.liquigraph.sentinel.configuration.BotPullRequestSettings
-import org.liquigraph.sentinel.effects.Computation
-import org.liquigraph.sentinel.effects.Success
+import org.liquigraph.sentinel.effects.flatMap
 import org.springframework.stereotype.Service
 import org.yaml.snakeyaml.Yaml
 import java.io.StringWriter
@@ -17,7 +16,7 @@ class StoredVersionService(private val storedBuildClient: StoredBuildClient,
                            private val yamlParser: Yaml) {
 
     fun applyChanges(initialBuildDefinition: String,
-                     versionChanges: List<VersionChange>): Computation<String> {
+                     versionChanges: List<VersionChange>): Result<String> {
 
         return neo4jVersionParser.parse(initialBuildDefinition).flatMap {
             val updated = applyUpdates(versionChanges, it)
@@ -26,7 +25,7 @@ class StoredVersionService(private val storedBuildClient: StoredBuildClient,
         }
     }
 
-    fun postPullRequest(buildDefinition: String): Computation<String> {
+    fun postPullRequest(buildDefinition: String): Result<String> {
         return storedBuildClient.postTravisYamlBlob(buildDefinition)
                 .flatMap { blob -> Pair(storedBuildClient.getMostRecentCommitHash(), blob).mapFirst() }
                 .flatMap { hashAndBlob ->
@@ -39,11 +38,11 @@ class StoredVersionService(private val storedBuildClient: StoredBuildClient,
                 .flatMap { storedBuildClient.postNewPullRequest(it, botPullRequestSettings) }
     }
 
-    private fun serializeYaml(rawTravisYaml: String, completeVersions: List<StoredVersion>): Success<String> {
+    private fun serializeYaml(rawTravisYaml: String, completeVersions: List<StoredVersion>): Result<String> {
         StringWriter().use {
             val content = updateVersionMatrix(rawTravisYaml, completeVersions)
             yamlParser.dump(content, it)
-            return Success(it.toString())
+            return Result.success(it.toString())
         }
     }
 
@@ -79,16 +78,16 @@ class StoredVersionService(private val storedBuildClient: StoredBuildClient,
         }
     }
 
-    fun getBuildDefinition(): Computation<String> {
+    fun getBuildDefinition(): Result<String> {
         return storedBuildClient.fetchBuildDefinition()
     }
 }
 
-fun <A, B> Pair<Computation<A>, B>.mapFirst(): Computation<Pair<A, B>> {
+fun <A, B> Pair<Result<A>, B>.mapFirst(): Result<Pair<A, B>> {
     return this.first.map { Pair(it, this.second) }
 }
 
-fun <A, B> Pair<A, Computation<B>>.mapSecond(): Computation<Pair<A, B>> {
+fun <A, B> Pair<A, Result<B>>.mapSecond(): Result<Pair<A, B>> {
     return this.second.map { Pair(this.first, it) }
 }
 

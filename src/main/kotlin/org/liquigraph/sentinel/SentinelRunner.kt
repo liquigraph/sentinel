@@ -1,8 +1,9 @@
 package org.liquigraph.sentinel
 
 import org.liquigraph.sentinel.configuration.WatchedArtifact
-import org.liquigraph.sentinel.dockerstore.DockerStoreService
-import org.liquigraph.sentinel.effects.Computation
+import org.liquigraph.sentinel.dockerstore.DockerStoreClient
+import org.liquigraph.sentinel.effects.flatMap
+import org.liquigraph.sentinel.effects.forEach
 import org.liquigraph.sentinel.github.StoredVersionParser
 import org.liquigraph.sentinel.github.StoredVersionService
 import org.liquigraph.sentinel.mavencentral.MavenArtifact
@@ -15,7 +16,7 @@ class SentinelRunner(private val storedVersionService: StoredVersionService,
                      private val storedVersionParser: StoredVersionParser,
                      private val mavenCentralService: MavenCentralService,
                      private val updateService: UpdateService,
-                     private val dockerStoreService: DockerStoreService,
+                     private val dockerStoreClient: DockerStoreClient,
                      private val watchedCoordinates: WatchedArtifact) : CommandLineRunner {
 
     override fun run(vararg args: String) {
@@ -35,16 +36,16 @@ class SentinelRunner(private val storedVersionService: StoredVersionService,
         }
     }
 
-    fun readFromGithub(): Computation<String> {
+    fun readFromGithub(): Result<String> {
         return storedVersionService.getBuildDefinition()
     }
 
-    fun readFromMavenCentral(mavenCoordinates: WatchedArtifact.MavenCoordinates): Computation<List<MavenArtifact>> {
+    fun readFromMavenCentral(mavenCoordinates: WatchedArtifact.MavenCoordinates): Result<List<MavenArtifact>> {
         return mavenCentralService.getArtifacts(mavenCoordinates)
     }
 
-    fun readFromDockerStore(dockerImage: WatchedArtifact.DockerCoordinates): Computation<Set<SemanticVersion>> {
-        return dockerStoreService.getVersions(dockerImage)
+    fun readFromDockerStore(dockerImage: WatchedArtifact.DockerCoordinates): Result<Set<SemanticVersion>> {
+        return dockerStoreClient.getVersions(dockerImage)
     }
 
 }

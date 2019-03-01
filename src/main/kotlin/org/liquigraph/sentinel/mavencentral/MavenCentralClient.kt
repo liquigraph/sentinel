@@ -4,60 +4,48 @@ import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import org.liquigraph.sentinel.effects.Failure
-import org.liquigraph.sentinel.effects.Computation
-import org.liquigraph.sentinel.effects.Success
+import org.liquigraph.sentinel.effects.toResult
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
+import java.lang.IllegalStateException
 
 @Component
 class MavenCentralClient(private val httpClient: OkHttpClient,
                          private val gson: Gson,
-                         @Value("\${mavenSearch.baseUri}") private val baseUri: String) {
+                         @Value("\${mavenSearch.baseUri}") final val baseUri: String) {
 
-    fun fetchMavenCentralResults(): Computation<List<MavenArtifact>> {
-        val responseBody = responseBody()
+    private val uri = "$baseUri/solrsearch/select?q=g%3A\"org.neo4j\"%20AND%20a%3A\"neo4j\"&core=gav&wt=json&rows=400"
 
-        return when (responseBody) {
-            is Failure -> Failure(responseBody.code, responseBody.message)
-            is Success -> extractDocs(responseBody)
-        }
+    fun fetchMavenCentralResults(): Result<List<MavenArtifact>> {
+        return responseBody(uri).fold({ extractDocs(it) }, { Result.failure(it) })
     }
 
-    private fun extractDocs(responseBody: Success<String>): Computation<List<MavenArtifact>> {
+    private fun extractDocs(responseBody: String): Result<List<MavenArtifact>> {
         return try {
-            val result = gson.fromJson(responseBody.content, MavenCentralResult::class.java)
+            val result = gson.fromJson(responseBody, MavenCentralResult::class.java)
             val response = result.response
 
             if (response == null) {
-                Failure(2002, "Could not find 'response' field")
+                Result.failure(IllegalStateException("Could not find 'response' field"))
             } else {
                 val docs = response.docs
                 if (docs == null) {
-                    Failure(2002, "Could not find 'docs' field")
+                    Result.failure(IllegalStateException("Could not find 'docs' field"))
                 } else {
-                    Success(docs)
+                    Result.success(docs)
                 }
             }
         } catch (e: JsonSyntaxException) {
-            Failure(2001, e.message!!)
+            Result.failure(e)
         }
     }
 
-    private fun responseBody(): Computation<String> {
-        val response = httpClient.newCall(Request.Builder()
-                .url("$baseUri/solrsearch/select?q=g%3A\"org.neo4j\"%20AND%20a%3A\"neo4j\"&core=gav&wt=json&rows=400")
+    private fun responseBody(uri: String): Result<String> {
+        return httpClient.newCall(Request.Builder()
+                .url(uri)
                 .build())
                 .execute()
-
-        return if (response.isSuccessful) {
-            Success(response.body()!!.string())
-        }
-        else when (response.code()) {
-            in 400..499 -> Failure(response.code(), "4xx error")
-            in 500..599 -> Failure(response.code(), "Unreachable $baseUri")
-            else -> Failure(response.code(), "Unexpected error")
-        }
+                .toResult()
     }
 
 }

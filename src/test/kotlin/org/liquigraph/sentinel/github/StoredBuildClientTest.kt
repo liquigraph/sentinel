@@ -10,15 +10,9 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.liquigraph.sentinel.Fixtures
 import org.liquigraph.sentinel.configuration.WatchedGithubRepository
-import org.liquigraph.sentinel.effects.Failure
-import org.liquigraph.sentinel.effects.Success
 import java.util.logging.LogManager
 
 class StoredBuildClientTest {
-
-    init {
-        LogManager.getLogManager().reset();
-    }
 
     lateinit var mockWebServer: MockWebServer
 
@@ -44,11 +38,12 @@ class StoredBuildClientTest {
 
         val yaml = client.fetchBuildDefinition()
 
-        assertThat(yaml).isEqualTo(Success(Fixtures.travisYml))
+        assertThat(yaml).isEqualTo(Result.success(Fixtures.travisYml))
     }
 
     @Test
     fun `propagates a 404 error`() {
+        val expectedErrorMessage = "Call on http://localhost:${mockWebServer.port}/repos/liquigraph/liquigraph/contents/.travis.yml resulted in response code 404"
         mockWebServer.enqueue(MockResponse().setResponseCode(404).setBody("""{
     "message": "Not Found",
     "documentation_url": "https://developer.github.com/v3"
@@ -56,35 +51,16 @@ class StoredBuildClientTest {
 
         val error = client.fetchBuildDefinition()
 
-        assertThat(error).isEqualTo(Failure<String>(404, "Not Found"))
-    }
-
-    @Test
-    fun `propagates a 500 error`() {
-        mockWebServer.enqueue(MockResponse().setResponseCode(500))
-
-        val error = client.fetchBuildDefinition()
-
-        assertThat(error).isEqualTo(Failure<String>(500, "Unreachable http://localhost:${mockWebServer.port}"))
-    }
-
-    @Test
-    fun `propagates a weird error`() {
-        mockWebServer.enqueue(MockResponse().setResponseCode(666))
-
-        val error = client.fetchBuildDefinition()
-
-        assertThat(error).isEqualTo(Failure<String>(666, "Unexpected error"))
+        assertThat(error.exceptionOrNull()!!.message).isEqualTo(expectedErrorMessage)
     }
 
     @Test
     fun `returns invalid JSON error`() {
         mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody("loliloljson"))
 
-        val result = client.fetchBuildDefinition() as Failure
+        val result = client.fetchBuildDefinition()
 
-        assertThat(result.code).isEqualTo(1001)
-        assertThat(result.message).containsIgnoringCase("Expected BEGIN_OBJECT but was STRING")
+        assertThat(result.exceptionOrNull()!!.message).contains("Expected BEGIN_OBJECT but was STRING")
     }
 
     private fun githubRepository(org: String, repo: String, branch: String): WatchedGithubRepository {

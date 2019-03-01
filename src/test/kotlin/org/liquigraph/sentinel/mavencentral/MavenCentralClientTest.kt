@@ -8,8 +8,6 @@ import okhttp3.mockwebserver.MockWebServer
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.liquigraph.sentinel.Fixtures
-import org.liquigraph.sentinel.effects.Failure
-import org.liquigraph.sentinel.effects.Success
 import org.liquigraph.sentinel.SemanticVersion
 import org.liquigraph.sentinel.SemanticVersionAdapter
 import java.util.logging.LogManager
@@ -29,7 +27,7 @@ class MavenCentralClientTest {
 
         val result = subject.fetchMavenCentralResults()
 
-        assertThat(result).isEqualTo(Success(Fixtures.mavenCentralArtifacts))
+        assertThat(result).isEqualTo(Result.success(Fixtures.mavenCentralArtifacts))
     }
 
     @Test
@@ -41,31 +39,9 @@ class MavenCentralClientTest {
 
         val result = subject.fetchMavenCentralResults()
 
-        assertThat(result).isEqualTo(Failure<List<MavenArtifact>>(404, "4xx error"))
-    }
-
-    @Test
-    fun `returns an error with 500`() {
-        val mockWebServer = MockWebServer()
-        mockWebServer.enqueue(MockResponse().setResponseCode(500))
-        mockWebServer.start()
-        val subject = MavenCentralClient(OkHttpClient(), gson(), "http://localhost:${mockWebServer.port}")
-
-        val result = subject.fetchMavenCentralResults()
-
-        assertThat(result).isEqualTo(Failure<List<MavenArtifact>>(500, "Unreachable http://localhost:${mockWebServer.port}"))
-    }
-
-    @Test
-    fun `returns an unknown error`() {
-        val mockWebServer = MockWebServer()
-        mockWebServer.enqueue(MockResponse().setResponseCode(758))
-        mockWebServer.start()
-        val subject = MavenCentralClient(OkHttpClient(), gson(), "http://localhost:${mockWebServer.port}")
-
-        val result = subject.fetchMavenCentralResults()
-
-        assertThat(result).isEqualTo(Failure<List<MavenArtifact>>(758, "Unexpected error"))
+        assertThat(result.exceptionOrNull()!!.message)
+                .startsWith("Call on http://localhost:${mockWebServer.port}")
+                .endsWith("resulted in response code 404")
     }
 
     @Test
@@ -75,10 +51,9 @@ class MavenCentralClientTest {
         mockWebServer.start()
         val subject = MavenCentralClient(OkHttpClient(), gson(), "http://localhost:${mockWebServer.port}")
 
-        val result = subject.fetchMavenCentralResults() as Failure
+        val result = subject.fetchMavenCentralResults()
 
-        assertThat(result.code).isEqualTo(2001)
-        assertThat(result.message).containsIgnoringCase("Expected BEGIN_OBJECT but was STRING")
+        assertThat(result.exceptionOrNull()!!.message).contains("Expected BEGIN_OBJECT but was STRING")
     }
 
     @Test
@@ -88,10 +63,9 @@ class MavenCentralClientTest {
         mockWebServer.start()
         val subject = MavenCentralClient(OkHttpClient(), gson(), "http://localhost:${mockWebServer.port}")
 
-        val result = subject.fetchMavenCentralResults() as Failure
+        val result = subject.fetchMavenCentralResults()
 
-        assertThat(result.code).isEqualTo(2002)
-        assertThat(result.message).containsIgnoringCase("Could not find 'response' field")
+        assertThat(result.exceptionOrNull()!!.message).isEqualTo("Could not find 'response' field")
     }
 
     @Test
@@ -101,10 +75,9 @@ class MavenCentralClientTest {
         mockWebServer.start()
         val subject = MavenCentralClient(OkHttpClient(), gson(), "http://localhost:${mockWebServer.port}")
 
-        val result = subject.fetchMavenCentralResults() as Failure
+        val result = subject.fetchMavenCentralResults()
 
-        assertThat(result.code).isEqualTo(2002)
-        assertThat(result.message).containsIgnoringCase("Could not find 'docs' field")
+        assertThat(result.exceptionOrNull()!!.message).isEqualTo("Could not find 'docs' field")
     }
 
 

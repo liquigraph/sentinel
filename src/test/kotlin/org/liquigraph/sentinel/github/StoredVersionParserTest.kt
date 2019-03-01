@@ -2,8 +2,6 @@ package org.liquigraph.sentinel.github
 
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import org.liquigraph.sentinel.effects.Failure
-import org.liquigraph.sentinel.effects.Success
 import org.yaml.snakeyaml.Yaml
 
 class StoredVersionParserTest {
@@ -19,7 +17,7 @@ class StoredVersionParserTest {
             |      WITH_DOCKER=true
             |    - NEO_VERSION=2.2.2
             |      WITH_DOCKER=false
-        """.trimMargin()) as Success<List<StoredVersion>>
+        """.trimMargin())
 
         assertThat(versions.getOrThrow())
                 .containsOnlyOnce(
@@ -33,7 +31,7 @@ class StoredVersionParserTest {
             |env:
             |  matrix:
             |    - NEO_VERSION=1.2.3
-        """.trimMargin()) as Success<List<StoredVersion>>
+        """.trimMargin())
 
         assertThat(versions.getOrThrow()).containsOnlyOnce(StoredVersion("1.2.3", inDockerStore = false))
     }
@@ -44,10 +42,9 @@ class StoredVersionParserTest {
             |env:
             |  matrix:
             |    - WITH_DOCKER=true
-        """.trimMargin()) as Failure
+        """.trimMargin())
 
-        assertThat(error.code).isEqualTo(1002)
-        assertThat(error.message).isEqualTo("Missing 'NEO_VERSION' field at index 0")
+        assertThat(error.exceptionOrNull()!!.message).isEqualTo("Missing 'NEO_VERSION' field at index 0")
     }
 
     @Test
@@ -58,10 +55,9 @@ class StoredVersionParserTest {
             |    - WITH_DOCKER=true
             |    - WITH_DOCKER=false
             |    - WITH_DOCKER=true
-        """.trimMargin()) as Failure
+        """.trimMargin())
 
-        assertThat(error.code).isEqualTo(1002)
-        assertThat(error.message).isEqualTo("""Missing 'NEO_VERSION' field at index 0
+        assertThat(error.exceptionOrNull()!!.message).isEqualTo("""Missing 'NEO_VERSION' field at index 0
             |Missing 'NEO_VERSION' field at index 1
             |Missing 'NEO_VERSION' field at index 2
         """.trimMargin())

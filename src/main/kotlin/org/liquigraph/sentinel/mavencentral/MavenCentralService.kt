@@ -1,13 +1,12 @@
 package org.liquigraph.sentinel.mavencentral
 
 import org.liquigraph.sentinel.configuration.WatchedArtifact
-import org.liquigraph.sentinel.effects.Computation
 import org.springframework.stereotype.Service
 
 @Service
 class MavenCentralService(private val mavenCentralClient: MavenCentralClient) {
 
-    fun getArtifacts(coordinates: WatchedArtifact.MavenCoordinates): Computation<List<MavenArtifact>> {
+    fun getArtifacts(coordinates: WatchedArtifact.MavenCoordinates): Result<List<MavenArtifact>> {
         return mavenCentralClient.fetchMavenCentralResults().map { mavenCentralArtifacts ->
             mavenCentralArtifacts.filter {
                 byCoordinates(it, coordinates)

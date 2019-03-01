@@ -11,14 +11,12 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.liquigraph.sentinel.*
 import org.liquigraph.sentinel.configuration.WatchedArtifact
-import org.liquigraph.sentinel.effects.Failure
-import org.liquigraph.sentinel.effects.Success
 import java.util.logging.LogManager
 
-class DockerStoreServiceTest {
+class DockerStoreClientTest {
 
     private lateinit var mockWebServer: MockWebServer
-    private lateinit var service: DockerStoreService
+    private lateinit var client: DockerStoreClient
     private val watchedArtifact = dockerDefinition("neo4j")
 
     init {
@@ -29,7 +27,7 @@ class DockerStoreServiceTest {
     fun prepare() {
         mockWebServer = MockWebServer()
         mockWebServer.start()
-        service = DockerStoreService(OkHttpClient(), gson(), "http://localhost:${mockWebServer.port}")
+        client = DockerStoreClient(OkHttpClient(), gson(), "http://localhost:${mockWebServer.port}")
     }
 
     @AfterEach
@@ -41,10 +39,10 @@ class DockerStoreServiceTest {
     fun `retrieves the Docker images from Docker Store`() {
         mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody(Fixtures.dockerStubResponse))
 
-        val result = service.getVersions(watchedArtifact)
+        val result = client.getVersions(watchedArtifact)
 
         assertThat(result)
-                .isEqualTo(Success(setOf(
+                .isEqualTo(Result.success(setOf(
                         "3.3.1".toVersion(),
                         "3.3.0".toVersion(),
                         "3.3.2".toVersion())))
@@ -57,37 +55,20 @@ class DockerStoreServiceTest {
     "documentation_url": "https://developer.github.com/v3"
 }""".trimIndent()))
 
-        val error = service.getVersions(watchedArtifact)
+        val error = client.getVersions(watchedArtifact)
 
-        assertThat(error).isEqualTo(Failure<String>(404, "4xx error"))
-    }
-
-    @Test
-    fun `propagates a 500 error`() {
-        mockWebServer.enqueue(MockResponse().setResponseCode(500))
-
-        val error = service.getVersions(watchedArtifact)
-
-        assertThat(error).isEqualTo(Failure<String>(500, "Unreachable http://localhost:${mockWebServer.port}"))
-    }
-
-    @Test
-    fun `propagates a weird error`() {
-        mockWebServer.enqueue(MockResponse().setResponseCode(666))
-
-        val error = service.getVersions(watchedArtifact)
-
-        assertThat(error).isEqualTo(Failure<String>(666, "Unexpected error"))
+        assertThat(error.exceptionOrNull()!!.message)
+                .startsWith("Call on http://localhost:${mockWebServer.port}")
+                .endsWith("resulted in response code 404")
     }
 
     @Test
     fun `returns invalid JSON error`() {
         mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody("loliloljson"))
 
-        val result = service.getVersions(watchedArtifact) as Failure
+        val result = client.getVersions(watchedArtifact)
 
-        assertThat(result.code).isEqualTo(3001)
-        assertThat(result.message).containsIgnoringCase("Expected BEGIN_OBJECT but was STRING")
+        assertThat(result.exceptionOrNull()!!.message).contains("Expected BEGIN_OBJECT but was STRING")
     }
 
     private fun gson(): Gson {
