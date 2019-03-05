@@ -1,0 +1,26 @@
+= Sentinel workflow =
+
+.workflow with Neo4j (Maven: org.neo4j:neo4j / Docker: neo4j)
+[plantuml, format="png"]
+----
+skinparam BoxPadding 10
+
+participant sources
+box "Pod 1" #LightBlue
+	participant github
+	participant maven_central
+    participant docker_store
+end box
+
+sentinel -> github: request .travis.yml contents
+github -> sentinel: respond with contents
+sentinel -> sentinel: extract and parse current build matrix
+sentinel -> maven_central: fetch releases of org.neo4j:neo4j
+maven_central -> sentinel: respond with contents
+sentinel -> sentinel: filter out unstable versions
+sentinel -> docker_store: request neo4j new image releases
+docker_store -> sentinel: respond with contents
+sentinel -> sentinel: compute updates to push
+sentinel -> sentinel: update initial .travis.yml contents
+sentinel -> github: send pull-request with changes
+----
