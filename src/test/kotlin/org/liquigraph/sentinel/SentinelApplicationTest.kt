@@ -1,6 +1,6 @@
 package org.liquigraph.sentinel
 
-import com.nhaarman.mockito_kotlin.mock
+import io.mockk.mockk
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.boot.test.context.SpringBootTest
@@ -16,7 +16,7 @@ class SentinelApplicationTest {
     class Config {
         @Bean
         fun mockRunner(): SentinelRunner {
-            return mock()
+            return mockk(relaxed = true)
         }
     }
 

@@ -1,25 +1,23 @@
 package org.liquigraph.sentinel.mavencentral
 
-import com.nhaarman.mockito_kotlin.mock
-import com.nhaarman.mockito_kotlin.whenever
+import io.mockk.every
+import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.liquigraph.sentinel.SemanticVersion
 import org.liquigraph.sentinel.configuration.WatchedArtifact
 import org.liquigraph.sentinel.toVersion
-import java.lang.RuntimeException
 
 class MavenCentralServiceTest {
-    private val mavenCentralClient = mock<MavenCentralClient>()
+    private val mavenCentralClient = mockk<MavenCentralClient>()
     private val subject = MavenCentralService(mavenCentralClient)
     private val watchedArtifact = mavenDefinition("org.neo4j", "neo4j", "jar", ".jar")
 
     @Test
     fun `returns version fetched by client`() {
-        whenever(mavenCentralClient.fetchMavenCentralResults()).thenReturn(Result.success(listOf(
+        every { mavenCentralClient.fetchMavenCentralResults() } returns Result.success(listOf(
                 MavenArtifact("org.neo4j", "neo4j", "1.2.3".toVersion(), "jar", listOf(".jar")),
                 MavenArtifact("org.neo4j", "neo4j", "2.3.4".toVersion(), "jar", listOf(".jar"))
-        )
         ))
 
         val neo4jVersions = subject.getArtifacts(watchedArtifact).getOrThrow()
@@ -31,13 +29,12 @@ class MavenCentralServiceTest {
 
     @Test
     fun `returns version fetched by client when they match the correct artifact attributes`() {
-        whenever(mavenCentralClient.fetchMavenCentralResults()).thenReturn(Result.success(listOf(
+        every { mavenCentralClient.fetchMavenCentralResults() } returns Result.success(listOf(
                 MavenArtifact("org.neo4j2", "neo4j", "1.2.3".toVersion(), "jar", listOf(".jar")),
                 MavenArtifact("org.neo4j", "neo4s", "2.3.5".toVersion(), "jar", listOf(".jar")),
                 MavenArtifact("org.neo4j", "neo4j", "2.3.4".toVersion(), "jar", listOf(".jar")),
                 MavenArtifact("org.neo4j", "neo4j", "2.3.6".toVersion(), "jar", listOf("-tests.jar")),
                 MavenArtifact("org.neo4j", "neo4j", "2.3.4".toVersion(), "pom", listOf(".pom"))
-        )
         ))
 
         val neo4jVersions = subject.getArtifacts(watchedArtifact).getOrThrow()
@@ -50,7 +47,6 @@ class MavenCentralServiceTest {
     @Test
     fun `propagates the client error`() {
         val error = Result.failure<List<MavenArtifact>>(RuntimeException("Not Found"))
-        whenever(mavenCentralClient.fetchMavenCentralResults()).thenReturn(error)
 
         val result = subject.getArtifacts(watchedArtifact)
 

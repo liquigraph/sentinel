@@ -1,7 +1,7 @@
 package org.liquigraph.sentinel.github
 
-import com.nhaarman.mockito_kotlin.mock
-import com.nhaarman.mockito_kotlin.whenever
+import io.mockk.every
+import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -10,14 +10,13 @@ import org.liquigraph.sentinel.Fixtures
 import org.liquigraph.sentinel.Update
 import org.liquigraph.sentinel.configuration.BotPullRequestSettings
 import org.liquigraph.sentinel.toVersion
-import org.mockito.ArgumentMatchers.anyString
 import org.yaml.snakeyaml.DumperOptions
 import org.yaml.snakeyaml.Yaml
 
 class StoredVersionServiceTest {
 
-    private val travisYamlClient = mock<StoredBuildClient>()
-    private val neo4jVersionParser = mock<StoredVersionParser>()
+    private val storedBuildClient = mockk<StoredBuildClient>()
+    private val neo4jVersionParser = mockk<StoredVersionParser>()
     private lateinit var service: StoredVersionService
     private lateinit var yamlParser: Yaml
 
@@ -26,13 +25,10 @@ class StoredVersionServiceTest {
         val options = DumperOptions()
         options.defaultFlowStyle = DumperOptions.FlowStyle.BLOCK
         yamlParser = Yaml(options)
-        service = StoredVersionService(travisYamlClient, neo4jVersionParser, BotPullRequestSettings(), yamlParser)
-
-        whenever(neo4jVersionParser.parse(anyString()))
-                .thenReturn(Result.success(listOf(StoredVersion("3.0.11".toVersion(), true), StoredVersion("3.1.7".toVersion()))))
-
-        whenever(travisYamlClient.fetchBuildDefinition())
-                .thenReturn(Result.success(Fixtures.travisYml))
+        service = StoredVersionService(storedBuildClient, neo4jVersionParser, BotPullRequestSettings(), yamlParser)
+        val parsingResult = Result.success(listOf(StoredVersion("3.0.11".toVersion(), true), StoredVersion("3.1.7".toVersion())))
+        every { neo4jVersionParser.parse(any()) } returns parsingResult
+        every { storedBuildClient.fetchBuildDefinition() } returns Result.success(Fixtures.travisYml)
     }
 
     @Test
